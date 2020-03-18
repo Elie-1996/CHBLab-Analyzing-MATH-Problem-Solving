@@ -1,10 +1,10 @@
 # CHBLab
 <h1><p class="tab"><strong><u>Computational Human Behavior Lab</u></strong></p></h1>
-<h2><p><strong><u>Project Proposal</u></strong></p></h2>
+<h2><p><strong><u>Project Proposal</u></strong></h2>
 <p><strong><u>Students:</u></strong></p>
 <p style="text-indent: 40px">Elie Abboud - 315475889</p>
 <p style="text-indent: 40px">Daniel Shalam - 205745052</p>
-<p><strong><u>------------------------------------------------------</u></strong></p>
+<p></p>
 <p><strong><u>Title:</u></strong> Analyzing MATH Problem Solving</p>
 <p><strong><u>End Goal:</u></strong></p>
 <p>A system that will collect data from eye-tracker of students who are solving math problems and give a binary classification for the students: <strong>talented</strong> or <strong>high-achieving</strong>.</p>

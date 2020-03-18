@@ -33,7 +33,7 @@
 <li>Accurate data collection (setup).</li>
 <li>Limited Learning (need more samples) &ndash; overfitting and outliers.</li>
 <li>Feature Selection.</li>
-<li></li>
+<li>Calibration</li>
 </ul>
 <p><strong><u>Possible Solutions to Challenges:</u></strong></p>
 <ul>

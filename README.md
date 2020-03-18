@@ -1,6 +1,6 @@
 # CHBLab
-<h1><p class="tab"><strong><u>Computational Human Behavior Lab</u></strong></p></h1>
-<h2><p><strong><u>Project Proposal</u></strong></h2>
+<p><strong><u>Computational Human Behavior Lab</u></strong></p>
+<p><strong><u>Project Proposal</u></strong>
 <p><strong><u>Students:</u></strong></p>
 <p style="text-indent: 40px">Elie Abboud - 315475889</p>
 <p style="text-indent: 40px">Daniel Shalam - 205745052</p>

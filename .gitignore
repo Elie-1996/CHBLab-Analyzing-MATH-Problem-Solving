@@ -128,3 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/rSettings.xml
+.idea/misc.xml
+.idea/CHBLab-Analyzing-MATH-Problem-Solving.iml

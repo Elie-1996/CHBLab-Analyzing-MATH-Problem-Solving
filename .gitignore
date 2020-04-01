@@ -130,3 +130,5 @@ dmypy.json
 .idea/rSettings.xml
 .idea/misc.xml
 .idea/CHBLab-Analyzing-MATH-Problem-Solving.iml
+*.xml
+*.iml

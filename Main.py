@@ -48,7 +48,7 @@ if __name__ == '__main__':
     y_array = df['RightY'].to_numpy()
 
     # some visualization (heat map)
-    Visualization.scatterDensity(df)
+    Visualization.scatter_density(df)
     # finding fixations - more info about Sfix Efix in Analysis module
     Sfix, Efix = Analysis.fixation_detection(x_array, y_array, time_array)
     # find saccades - more info about Ssac Esac in Analysis module

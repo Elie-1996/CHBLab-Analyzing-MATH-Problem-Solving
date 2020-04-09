@@ -3,11 +3,11 @@ from scipy.stats import gaussian_kde
 import numpy
 
 
-def scatterDensity(df):
+def scatter_density(df):
     x = df['RightX']
     y = df['RightY']
 
-    ################# Plotting ####################################################
+    # ################ Plotting ####################################################
     g6 = plt.figure(1)
     ax6 = g6.add_subplot(111)
     xy = numpy.vstack([x, y])
@@ -21,5 +21,3 @@ def scatterDensity(df):
     plt.ylabel('Gaze coordinates (Y) in pixels', fontsize=12)
     plt.tick_params(labelsize=16)
     plt.show()
-
-

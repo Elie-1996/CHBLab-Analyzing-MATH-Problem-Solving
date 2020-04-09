@@ -1,7 +1,7 @@
 import pandas as pd
 import msgpack
 import Analysis
-import Visualization
+from Visualization import Visualization
 
 # TODO The x,y we get from norm_pos are normalize, we should get the real coordinate by multiplying each of them by
 #  the length and width of the screen size
@@ -12,9 +12,6 @@ import Visualization
             df["Timestampe"] is the current frame Time stamp"""
 
 if __name__ == '__main__':
-    print("We're starting our project!")
-    print("Computational Human Behavior - Let's do it.")
-
     # making the data frame for pupil data
     pldata_dir = './000/pupil.pldata'
 

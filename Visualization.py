@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gaussian_kde
+from math import floor, ceil
 import numpy
 
 
@@ -18,12 +19,27 @@ class VisualizationMap:
     def __init__(self, image, df, horizontal_bins=5, vertical_bins=5, pad_value=float("-inf")):
         self.df = df
         self.full_image = np.array(image)
+        self.horizontal_bins = horizontal_bins
+        self.vertical_bins = vertical_bins
+        self.bins = [0] * (horizontal_bins * vertical_bins)
         self.image_parts = self.__split_image_to_rectangular_bins(
             self.full_image,
             horizontal_bins,
             vertical_bins,
             pad_value
         )
+
+    # returns the index of the bin that (x, y) is within in self.bins
+    def map_coordinate_to_bin_idx(self, x, y):
+        rows_amount, cols_amount = self.full_image.shape
+
+        horizontal_jump = ceil(cols_amount / self.horizontal_bins)
+        amount_of_bins_to_the_right = floor(x / horizontal_jump)
+
+        vertical_jump = ceil(rows_amount / self.vertical_bins)
+        amount_of_bins_to_down = floor(y / vertical_jump)
+
+        return self.horizontal_bins * amount_of_bins_to_down + amount_of_bins_to_the_right
 
     # split any numpy image to sub-images, in a uniform manner according to horizontal_split and vertical_split.
     # horizontal_split, vertical_split - are integers in which specify how many splits to do in their direction.
@@ -97,4 +113,8 @@ class Visualization:
 # TODO: local test main, to be removed later.
 # if __name__ == '__main__':
 #     a = np.linspace(0, 24, 25).reshape([5, 5, ])
-#     VisualizationMap(a, "", 5, 5)
+#     vm = VisualizationMap(a, "", 2, 3)
+#     print(vm.map_coordinate_to_bin_idx(0, 0))
+#     print(vm.map_coordinate_to_bin_idx(2, 3))
+#     print(vm.map_coordinate_to_bin_idx(3, 3))
+#     print(vm.map_coordinate_to_bin_idx(4, 4))

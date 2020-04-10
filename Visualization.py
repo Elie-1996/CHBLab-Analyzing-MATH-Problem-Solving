@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import gaussian_kde
 from math import floor, ceil
 import numpy
+import GUI
 
 
 # TODO: Should create GUI using Tkinter to visualize the graph later on (Timestamp can control where the user looked
@@ -22,7 +23,7 @@ class VisualizationMap:
         self.horizontal_bins = horizontal_bins
         self.vertical_bins = vertical_bins
         self.bins = [0] * (horizontal_bins * vertical_bins)
-        self.image_parts = self.__split_image_to_rectangular_bins(
+        self.image_parts = self.__split_image_to_bins(
             self.full_image,
             horizontal_bins,
             vertical_bins,
@@ -30,6 +31,7 @@ class VisualizationMap:
         )
 
     # returns the index of the bin that (x, y) is within in self.bins
+    # note: must be in sync with @__split_image_to_bins
     def map_coordinate_to_bin_idx(self, x, y):
         rows_amount, cols_amount = self.full_image.shape
 
@@ -47,8 +49,9 @@ class VisualizationMap:
     # padded with pad_value.
     # Example: ([0, 1, 2] -> can't be divided into 2 equivalent parts -> [0, 1, 2, pad_value] -> can be divided into
     # 2 equivalent parts -> [0, 1], [2, pad_value])
+    # note: must be in sync with @map_coordinate_to_bin_idx
     @staticmethod
-    def __split_image_to_rectangular_bins(image, horizontal_bins, vertical_bins, pad_value):
+    def __split_image_to_bins(image, horizontal_bins, vertical_bins, pad_value):
         original_image_rows, original_image_columns = image.shape
         image_rows, image_columns = image.shape
 
@@ -111,10 +114,12 @@ class Visualization:
 
 
 # TODO: local test main, to be removed later.
-# if __name__ == '__main__':
-#     a = np.linspace(0, 24, 25).reshape([5, 5, ])
-#     vm = VisualizationMap(a, "", 2, 3)
-#     print(vm.map_coordinate_to_bin_idx(0, 0))
-#     print(vm.map_coordinate_to_bin_idx(2, 3))
-#     print(vm.map_coordinate_to_bin_idx(3, 3))
-#     print(vm.map_coordinate_to_bin_idx(4, 4))
+if __name__ == '__main__':
+    a = np.linspace(0, 24, 25).reshape([5, 5, ])
+    vm = VisualizationMap(a, "", 2, 3)
+    print(vm.map_coordinate_to_bin_idx(0, 0))
+    print(vm.map_coordinate_to_bin_idx(2, 3))
+    print(vm.map_coordinate_to_bin_idx(3, 3))
+    print(vm.map_coordinate_to_bin_idx(4, 4))
+
+    GUI.setup_gui()

@@ -38,9 +38,8 @@ def load_input_data():
     df['Diameter'] = pupil_data['Diameter']
 
     # ###### update the data ######
-    Data.normalized_df = df
     # TODO: When we know the x_scale and y_scale, we should use update_input_data to update Data.normalized
-    # update_input_data(x_scale=1, y_scale=1, normalized_df_=df)
+    update_input_data(x_scale=0, y_scale=0, normalized_df_=df)
 
 
 def update_input_data(x_scale, y_scale, normalized_df_=None, denormalized_df_=None):
@@ -48,40 +47,43 @@ def update_input_data(x_scale, y_scale, normalized_df_=None, denormalized_df_=No
         warn("Attempted to normalize/denormalize data without a possible update (both normalized and denormalized "
              "data were passed)")
     elif normalized_df_ is not None:
-        time_array = normalized_df_['Timestamp']
-        x_array = normalized_df_['RightX']
-        y_array = normalized_df_['RightY']
+        time_array = normalized_df_['Timestamp'].copy(deep=True)
+        x_array = normalized_df_['RightX'].copy(deep=True)
+        y_array = normalized_df_['RightY'].copy(deep=True)
 
         time_array = time_array - time_array[0]
         x_array = x_array * x_scale
         y_array = y_array * y_scale
 
         # update denormalized
-        Data.denormalized_df = normalized_df_
+        Data.denormalized_df = normalized_df_.copy(deep=True)
         Data.denormalized_df['Timestamp'] = time_array
         Data.denormalized_df['RightX'] = x_array
         Data.denormalized_df['RightY'] = y_array
 
         # update normalized
-        Data.normalized_df = normalized_df_
+        Data.normalized_df = normalized_df_.copy(deep=True)
+        Data.normalized_df['Timestamp'] = time_array
 
     elif denormalized_df_ is not None:
-        time_array = denormalized_df_['Timestamp']
-        x_array = denormalized_df_['RightX']
-        y_array = denormalized_df_['RightY']
+        time_array = denormalized_df_['Timestamp'].copy(deep=True)
+        x_array = denormalized_df_['RightX'].copy(deep=True)
+        y_array = denormalized_df_['RightY'].copy(deep=True)
 
         time_array = time_array - time_array[0]
         x_array = x_array / x_scale
         y_array = y_array / y_scale
 
         # update denormalized
-        Data.normalized_df = denormalized_df_
+        Data.normalized_df = denormalized_df_.copy(deep=True)
         Data.normalized_df['Timestamp'] = time_array
         Data.normalized_df['RightX'] = x_array
         Data.normalized_df['RightY'] = y_array
 
         # update normalized
-        Data.denormalized_df = denormalized_df_
+        Data.denormalized_df = denormalized_df_.copy(deep=True)
+        Data.denormalized_df['Timestamp'] = time_array
+
     else:
         warn("Attempted to normalize/denormalize data with no given input (neither normalized nor denormalized data "
              "were passed)")

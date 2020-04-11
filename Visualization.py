@@ -3,7 +3,6 @@ import numpy as np
 from scipy.stats import gaussian_kde
 from math import floor, ceil
 import numpy
-import GUI
 
 
 # TODO: Should create GUI using Tkinter to visualize the graph later on (Timestamp can control where the user looked
@@ -11,24 +10,59 @@ import GUI
 # TODO: Information on Tkinter: https://www.geeksforgeeks.org/python-gui-tkinter/
 # TODO: Integrating Tkinter and Matplotlib: https://www.youtube.com/watch?v=JQ7QP5rPvjU
 class VisualizationMap:
-    """
-        This class is expected to be a super class of other Visualization maps (or anything similar) in the future.
-        It can be even further abstracted, for example: instead of rectangular bins, use hexagon bins. etc.
-        So far, we are expecting HeatMaps and GraphMaps to be subclasses.
-    """
 
-    def __init__(self, image, df, horizontal_bins=5, vertical_bins=5, pad_value=float("-inf")):
-        self.df = df
+    def __init__(self, image, df_as_dictionary,
+                 horizontal_bins=5, vertical_bins=5,
+                 initial_interval_start=0, initial_interval_end=5,
+                 pad_value=float("-inf")):
+        self.x_coords = df_as_dictionary['RightX']
+        self.y_coords = df_as_dictionary['RightY']
+        self.time_stamps = df_as_dictionary['Timestamp']
         self.full_image = np.array(image)
         self.horizontal_bins = horizontal_bins
         self.vertical_bins = vertical_bins
-        self.bins = [0] * (horizontal_bins * vertical_bins)
+        self.bins = [[] for i in range(horizontal_bins * vertical_bins)]
         self.image_parts = self.__split_image_to_bins(
             self.full_image,
             horizontal_bins,
             vertical_bins,
             pad_value
         )
+        self.time_interval_start = 0
+        self.time_interval_end = 0
+        self.update_interval(initial_interval_start, initial_interval_end)
+
+    def update_interval(self, time_interval_start, time_interval_end):
+        self.time_interval_start = time_interval_start
+        self.time_interval_end = time_interval_end
+        self.update_bin_division(self.horizontal_bins, self.vertical_bins)
+
+    def update_bin_division(self, horizontal_bins, vertical_bins):
+        self.horizontal_bins, self.vertical_bins = horizontal_bins, vertical_bins
+
+        # x_coords and y_coords denote the coordinates that were allocated in the interval time stamp given by self.
+        x_coords = self.__filter_data_according_to_time_stamp(self.x_coords)
+        y_coords = self.__filter_data_according_to_time_stamp(self.y_coords)
+
+        # first, clear the bins
+        for _bin in self.bins:
+            _bin.clear()
+        self.bins.clear()
+        self.bins = [[] for i in range(self.horizontal_bins * self.vertical_bins)]
+
+        # second, update the bins
+        for i in range(len(x_coords)):
+            x, y = x_coords[i], y_coords[i]
+            bin_idx = self.map_coordinate_to_bin_idx(x, y)
+            self.bins[bin_idx].append((x, y))
+
+    def __filter_data_according_to_time_stamp(self, coordinates):
+        time_stamp = self.time_stamps
+        coordinates_within_timestamp = []
+        for i in range(len(time_stamp)):
+            if self.time_interval_start <= time_stamp[i] <= self.time_interval_end:
+                coordinates_within_timestamp.append(coordinates[i])
+        return coordinates_within_timestamp
 
     # returns the index of the bin that (x, y) is within in self.bins
     # note: must be in sync with @__split_image_to_bins
@@ -89,6 +123,11 @@ class VisualizationMap:
 
         return image, image_rows, image_columns
 
+    # For debugging purposes
+    def display_bin_data(self):
+        for i in range(len(self.bins)):
+            print("bin #" + str(i) + ": " + str(self.bins[i]))
+
 
 class Visualization:
 
@@ -111,15 +150,3 @@ class Visualization:
         plt.ylabel('Gaze coordinates (Y) in pixels', fontsize=12)
         plt.tick_params(labelsize=16)
         plt.show()
-
-
-# TODO: local test main, to be removed later.
-if __name__ == '__main__':
-    a = np.linspace(0, 24, 25).reshape([5, 5, ])
-    vm = VisualizationMap(a, "", 2, 3)
-    print(vm.map_coordinate_to_bin_idx(0, 0))
-    print(vm.map_coordinate_to_bin_idx(2, 3))
-    print(vm.map_coordinate_to_bin_idx(3, 3))
-    print(vm.map_coordinate_to_bin_idx(4, 4))
-
-    GUI.setup_gui()

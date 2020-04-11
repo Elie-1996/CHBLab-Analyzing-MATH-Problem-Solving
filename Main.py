@@ -1,7 +1,6 @@
-import pandas as pd
-import msgpack
 import Analysis
-from Visualization import Visualization
+from Visualization import Visualization, VisualizationMap
+from Data import Data, load_input_data
 
 # TODO The x,y we get from norm_pos are normalize, we should get the real coordinate by multiplying each of them by
 #  the length and width of the screen size
@@ -12,43 +11,36 @@ from Visualization import Visualization
             df["Timestampe"] is the current frame Time stamp"""
 
 if __name__ == '__main__':
-    # making the data frame for pupil data
-    pldata_dir = './000/pupil.pldata'
-
-    with open(pldata_dir, 'rb') as f:
-        pupil_data = [[msgpack.unpackb(payload)['timestamp'],
-                       msgpack.unpackb(payload)['diameter'] / 10,
-                       msgpack.unpackb(payload)['diameter_3d'],
-                       msgpack.unpackb(payload)['norm_pos'][0],
-                       msgpack.unpackb(payload)['norm_pos'][1]]
-                      for _, payload in msgpack.Unpacker(f)]
-
-    # here we will create panda df and choose names for columns
-    pupil_data = pd.DataFrame(pupil_data, columns=['Timestamp', 'Diameter', 'Diameter_3d', 'norm_x', 'norm_y'])
-
-    # making the data frame for gaze data
-    pldata_dir = './000/gaze.pldata'
-
-    with open(pldata_dir, 'rb') as f:
-        gaze_data = [[msgpack.unpackb(payload)['timestamp'],
-                      msgpack.unpackb(payload)['norm_pos'][0],
-                      msgpack.unpackb(payload)['norm_pos'][1]]
-                     for _, payload in msgpack.Unpacker(f)]
-
-    # here we will create the panda df and choose names for columns (I didn't check for all possible columns yet)
-    df = pd.DataFrame(gaze_data, columns=['Timestamp', 'RightX', 'RightY'])
-    df['Diameter'] = pupil_data['Diameter']
+    load_input_data()
+    df = Data.normalized_df
 
     # converting to numpy array for later use
     time_array = df['Timestamp'].to_numpy()
     x_array = df['RightX'].to_numpy()
     y_array = df['RightY'].to_numpy()
 
-    # some visualization (heat map)
-    Visualization.scatter_density(df)
-    # finding fixations - more info about Sfix Efix in Analysis module
-    Sfix, Efix = Analysis.fixation_detection(x_array, y_array, time_array)
-    # find saccades - more info about Ssac Esac in Analysis module
-    Ssac, Esac = Analysis.saccade_detection(x_array, y_array, time_array)
+    # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
+    #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
+    testing_visualization = False
+    if not testing_visualization:
+        # some visualization (heat map)
+        Visualization.scatter_density(df)
+        # finding fixations - more info about Sfix Efix in Analysis module
+        Sfix, Efix = Analysis.fixation_detection(x_array, y_array, time_array)
+        # find saccades - more info about Ssac Esac in Analysis module
+        Ssac, Esac = Analysis.saccade_detection(x_array, y_array, time_array)
 
-    print(df)
+        print(df)
+    else:
+        import numpy as np
+        image = np.round(np.random.rand(30, 30) * 255) % 2
+        image_contrast_stretched = np.round(255 * ((image - 0) / (2 - 0)))
+
+        should_display_image = False
+        if should_display_image:
+            import matplotlib.pyplot as plt
+
+            plt.imshow(image)
+            plt.show()
+
+        VisualizationMap(image_contrast_stretched, df, 2, 3)

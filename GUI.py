@@ -1,5 +1,6 @@
 from tkinter import *
 
+
 def setup_gui():
     m = Tk()
     m.title('HeatMap')
@@ -21,29 +22,28 @@ def setup_gui():
 
 
 def menu_buttons_widget(parent, m):
-    mb = Menubutton(m, text= "File")
+    mb = Menubutton(m, text="File")
     mb.grid()
     mb.menu = Menu(mb, tearoff=0)
     mb["menu"] = mb.menu
     cVar = IntVar()
     aVar = IntVar()
     mb.menu.add_checkbutton(label='Load...', variable=cVar)
-    mb.menu.add_checkbutton(label='Exit', command=parent.destroy)
+    mb.menu.add_checkbutton(label='Exit', command=parent.destroy, variable=aVar)
     mb.pack()
 
 
 def heatmap_widget(m):
     import numpy
     import matplotlib.pyplot as plt
-    from scipy.stats import gaussian_kde
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
     # representation should change but this is a good start for the testing for now :)
     # real data should be brought here and not some random data as seen below.
-    x = numpy.random.rand(1000)
-    y = numpy.random.rand(1000)
+    x = numpy.random.rand(5)
+    y = numpy.random.rand(5)
 
-    f = plt.Figure(figsize=(5,5), dpi=100)
+    f = plt.Figure(figsize=(5, 5), dpi=100)
     a = f.add_subplot(111)
     a.plot(x, y)
     canvas = FigureCanvasTkAgg(f, m)

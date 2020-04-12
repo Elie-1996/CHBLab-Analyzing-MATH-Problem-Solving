@@ -1,7 +1,8 @@
 from tkinter import *
+from Visualization import VisualizationMap
 
 
-def setup_gui():
+def setup_gui(vm: VisualizationMap):
     m = Tk()
     m.title('HeatMap')
 
@@ -9,7 +10,7 @@ def setup_gui():
     menu_buttons_widget(m, menu_button_frame)
 
     map_frame = Frame()
-    heatmap_widget(map_frame)
+    heatmap_widget(map_frame, vm)
 
     widgets_frame = Frame()
     time_widget(widgets_frame)
@@ -33,19 +34,24 @@ def menu_buttons_widget(parent, m):
     mb.pack()
 
 
-def heatmap_widget(m):
+def heatmap_widget(m, vm):
     import numpy
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
     # representation should change but this is a good start for the testing for now :)
     # real data should be brought here and not some random data as seen below.
-    x = numpy.random.rand(5)
-    y = numpy.random.rand(5)
 
+    x_coords = []
+    y_coords = []
+    for current_bin in vm.bins:
+        for (x, y) in current_bin:
+            x_coords.append(x)
+            y_coords.append(y)
     f = plt.Figure(figsize=(5, 5), dpi=100)
     a = f.add_subplot(111)
-    a.plot(x, y)
+    a.imshow(vm.full_image)
+    a.plot(x_coords, y_coords)
     canvas = FigureCanvasTkAgg(f, m)
     canvas.draw()
     canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)

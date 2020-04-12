@@ -75,4 +75,4 @@ if __name__ == '__main__':
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``")
         vm.update_bin_division(1, 2)
         vm.display_bin_data()
-        # GUI.setup_gui(vm)
+        GUI.setup_gui(vm)

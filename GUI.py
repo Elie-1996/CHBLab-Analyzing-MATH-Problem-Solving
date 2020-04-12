@@ -57,14 +57,11 @@ def heatmap_widget(m, vm):
     canvas = FigureCanvasTkAgg(f, m)
     canvas.draw()
     canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
-    substitute_plot(vm, ax, canvas, x_coords, y_coords)
+    substitute_heatmap_plot(vm, ax, canvas, x_coords, y_coords)
     return ax, canvas
 
 
-def substitute_plot(vm, ax, canvas, x_coords, y_coords):
-    print("------------------------------")
-    print(x_coords)
-    print(y_coords)
+def substitute_heatmap_plot(vm, ax, canvas, x_coords, y_coords):
     ax.clear()
     ax.imshow(vm.full_image)
     ax.plot(x_coords, y_coords)
@@ -80,7 +77,7 @@ def attempt_update(vm, ax, canvas, start_time_str, end_time_str):
         return
     vm.update_interval(start, end)
     x_coords, y_coords = compute_relevant_coordinates(vm)
-    substitute_plot(vm, ax, canvas, x_coords, y_coords)
+    substitute_heatmap_plot(vm, ax, canvas, x_coords, y_coords)
 
 
 def time_widget(m, vm, ax, canvas):

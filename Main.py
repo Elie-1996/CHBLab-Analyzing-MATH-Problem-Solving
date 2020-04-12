@@ -72,7 +72,4 @@ if __name__ == '__main__':
         for x in a: test_df['RightY'].append(x)
         vm = VisualizationMap(image_contrast_stretched, test_df, 2, 3, 0, 20)
         vm.display_bin_data()
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``")
-        vm.update_bin_division(1, 2)
-        vm.display_bin_data()
         GUI.setup_gui(vm)

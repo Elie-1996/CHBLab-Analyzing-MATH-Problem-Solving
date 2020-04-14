@@ -78,7 +78,7 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     the code has improved quite a bit.
     Parameters
     ----------
-    :param facecolor: 
+    :param facecolor:
     :param x : array_like, shape (n, )
         Input data.
     :param y : array_like, shape (n, )

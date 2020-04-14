@@ -6,20 +6,20 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
     distance of less than a set amount of pixels (disregarding missing data)
 
     arguments
-    x		-	numpy array of x positions
-    y		-	numpy array of y positions
-    time		-	numpy array of EyeTribe timestamps
-    keyword arguments
-    missing	-	value to be used for missing data (default = 0.0)
-    maxdist	-	maximal inter sample distance in pixels (default = 25)
-    mindur	-	minimal duration of a fixation in milliseconds; detected
+    :param : x		-	numpy array of x positions
+    :param : y		-	numpy array of y positions
+    :param : time		-	numpy array of EyeTribe timestamps
+    :param : keyword arguments
+    :param : missing	-	value to be used for missing data (default = 0.0)
+    :param : maxdist	-	maximal inter sample distance in pixels (default = 25)
+    :param : mindur	-	minimal duration of a fixation in milliseconds; detected
                 fixation cadidates will be disregarded if they are below
                 this duration (default = 100)
 
     returns
     Sfix, Efix
-                Sfix	-	list of lists, each containing [starttime]
-                Efix	-	list of lists, each containing [starttime, endtime, duration, endx, endy]
+                :param: Sfix	-	list of lists, each containing [starttime]
+                :param: Efix	-	list of lists, each containing [starttime, endtime, duration, endx, endy]
     """
 
     x, y, time = remove_missing(x, y, time, missing)

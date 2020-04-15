@@ -1,7 +1,10 @@
 import numpy as np
+from sklearn.cluster import OPTICS, cluster_optics_dbscan
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 
 
-def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
+def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=10):
     """Detects fixations, defined as consecutive samples with an inter-sample
     distance of less than a set amount of pixels (disregarding missing data)
 
@@ -59,6 +62,15 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=25, mindur=50):
     # add last fixation end (we can lose it if dist > maxdist is false for the last point)
     if len(Sfix) > len(Efix):
         Efix.append([Sfix[-1][0], time[len(x) - 1], time[len(x) - 1] - Sfix[-1][0], x[si], y[si]])
+    x_list =[]
+    y_list =[]
+    for fix in Efix:
+        x_list.append(fix[3])
+    for fix in Efix:
+        y_list.append(fix[4])
+
+    plt.scatter(x_list, y_list)
+    plt.show()
     return Sfix, Efix
 
 
@@ -162,3 +174,59 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
             stop = True
 
     return Ssac, Esac
+
+
+def making_clusters(xy):
+    X = np.vstack(xy)
+    print(X)
+    clust = OPTICS(min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
+                   eps=None,
+                   xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto', leaf_size=30,
+                   n_jobs=None).fit(X)
+
+    # Performs DBSCAN extraction for an arbitrary epsilon (0.5) .
+    labels_050 = cluster_optics_dbscan(reachability=clust.reachability_,
+                                       core_distances=clust.core_distances_,
+                                       ordering=clust.ordering_, eps=0.5)
+
+    space = np.arange(len(X))
+    reachability = clust.reachability_[clust.ordering_]
+    labels = clust.labels_[clust.ordering_]
+
+    plt.figure(figsize=(10, 7))
+    G = gridspec.GridSpec(2, 3)
+    ax1 = plt.subplot(G[0, :])
+    ax2 = plt.subplot(G[1, 0])
+    ax3 = plt.subplot(G[1, 1])
+
+    # Reachability plot
+    colors = ['g.', 'r.', 'b.', 'y.', 'c.']
+    for klass, color in zip(range(0, 5), colors):
+        Xk = space[labels == klass]
+        Rk = reachability[labels == klass]
+        ax1.plot(Xk, Rk, color, alpha=0.3)
+    ax1.plot(space[labels == -1], reachability[labels == -1], 'k.', alpha=0.3)
+    ax1.plot(space, np.full_like(space, 2., dtype=float), 'k-', alpha=0.5)
+    ax1.plot(space, np.full_like(space, 0.5, dtype=float), 'k-.', alpha=0.5)
+    ax1.set_ylabel('Reachability (epsilon distance)')
+    ax1.set_title('Reachability Plot')
+
+    # OPTICS
+    colors = ['g.', 'r.', 'b.', 'y.', 'c.']
+    for klass, color in zip(range(0, 5), colors):
+        Xk = X[clust.labels_ == klass]
+        ax2.plot(Xk[:, 0], Xk[:, 1], color, alpha=0.3)
+    ax2.plot(X[clust.labels_ == -1, 0], X[clust.labels_ == -1, 1], 'k+', alpha=0.1)
+    ax2.set_title('Automatic Clustering\nOPTICS')
+
+    # DBSCAN at 0.5
+    colors = ['g', 'greenyellow', 'olive', 'r', 'b', 'c']
+    for klass, color in zip(range(0, 6), colors):
+        Xk = X[labels_050 == klass]
+        ax3.plot(Xk[:, 0], Xk[:, 1], color, alpha=0.3, marker='.')
+    ax3.plot(X[labels_050 == -1, 0], X[labels_050 == -1, 1], 'k+', alpha=0.1)
+    ax3.set_title('Clustering at 0.5 epsilon cut\nDBSCAN')
+
+    plt.tight_layout()
+    plt.show()
+    return clust

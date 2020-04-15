@@ -12,13 +12,12 @@ class Data:
 def load_input_data():
     # making the data frame for pupil data
     pldata_dir = './000/pupil.pldata'
-
     with open(pldata_dir, 'rb') as f:
-        pupil_data = [[msgpack.unpackb(payload)['timestamp'],
-                       msgpack.unpackb(payload)['diameter'] / 10,
-                       msgpack.unpackb(payload)['diameter_3d'],
-                       msgpack.unpackb(payload)['norm_pos'][0],
-                       msgpack.unpackb(payload)['norm_pos'][1]]
+        pupil_data = [[msgpack.unpackb(payload)[b'timestamp'],
+                       msgpack.unpackb(payload)[b'diameter'] / 10,
+                       msgpack.unpackb(payload)[b'diameter_3d'],
+                       msgpack.unpackb(payload)[b'norm_pos'][0],
+                       msgpack.unpackb(payload)[b'norm_pos'][1]]
                       for _, payload in msgpack.Unpacker(f)]
 
     # here we will create panda df and choose names for columns
@@ -28,9 +27,9 @@ def load_input_data():
     pldata_dir = './000/gaze.pldata'
 
     with open(pldata_dir, 'rb') as f:
-        gaze_data = [[msgpack.unpackb(payload)['timestamp'],
-                      msgpack.unpackb(payload)['norm_pos'][0],
-                      msgpack.unpackb(payload)['norm_pos'][1]]
+        gaze_data = [[msgpack.unpackb(payload)[b'timestamp'],
+                      msgpack.unpackb(payload)[b'norm_pos'][0],
+                      msgpack.unpackb(payload)[b'norm_pos'][1]]
                      for _, payload in msgpack.Unpacker(f)]
 
     # here we will create the panda df and choose names for columns (I didn't check for all possible columns yet)
@@ -39,7 +38,7 @@ def load_input_data():
 
     # ###### update the data ######
     # TODO: When we know the x_scale and y_scale, we should use update_input_data to update Data.normalized
-    update_input_data(x_scale=0, y_scale=0, normalized_df_=df)
+    update_input_data(x_scale=640, y_scale=480, normalized_df_=df)
 
 
 def update_input_data(x_scale, y_scale, normalized_df_=None, denormalized_df_=None):

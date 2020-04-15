@@ -18,24 +18,37 @@ def get_random_array_with_range(shape, min_range, max_range):
 if __name__ == '__main__':
     load_input_data()
     df = Data.normalized_df
-
+    fixation_list = []
+    coordinate_list = []
     # converting to numpy array for later use
     time_array = df['Timestamp'].to_numpy()
+    print(time_array)
     x_array = df['RightX'].to_numpy()
     y_array = df['RightY'].to_numpy()
 
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
-    testing_visualization = True
+    testing_visualization = False
     if not testing_visualization:
+        for i, y in enumerate(y_array):
+            if y > 1 or y < 0:
+                print('Y data:', time_array[i], y)
+        for i, x in enumerate(x_array):
+            if x > 1 or x < 0:
+                print('X data:', time_array[i], x)
+        real_x = x_array * 1366
+        real_y = y_array * 768
         # some visualization (heat map)
-        Visualization.scatter_density(df)
+        # Visualization.scatter_density(df)
         # finding fixations - more info about Sfix Efix in Analysis module
-        Sfix, Efix = Analysis.fixation_detection(x_array, y_array, time_array)
+        Sfix, Efix = Analysis.fixation_detection(real_x, real_y, time_array)
         # find saccades - more info about Ssac Esac in Analysis module
-        Ssac, Esac = Analysis.saccade_detection(x_array, y_array, time_array)
+        Ssac, Esac = Analysis.saccade_detection(real_x, real_y, time_array)
+        for fix in Efix:
+            fixation_list.append([fix[3], fix[4]])
 
-        print(df)
+        #clusters = Analysis.making_clusters(fixation_list)
+        # print(df)
     else:
         import numpy as np
         import GUI

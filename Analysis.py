@@ -4,7 +4,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 
 
-def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=10):
+def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=5):
     """Detects fixations, defined as consecutive samples with an inter-sample
     distance of less than a set amount of pixels (disregarding missing data)
 
@@ -62,15 +62,7 @@ def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=10):
     # add last fixation end (we can lose it if dist > maxdist is false for the last point)
     if len(Sfix) > len(Efix):
         Efix.append([Sfix[-1][0], time[len(x) - 1], time[len(x) - 1] - Sfix[-1][0], x[si], y[si]])
-    x_list =[]
-    y_list =[]
-    for fix in Efix:
-        x_list.append(fix[3])
-    for fix in Efix:
-        y_list.append(fix[4])
 
-    plt.scatter(x_list, y_list)
-    plt.show()
     return Sfix, Efix
 
 
@@ -176,9 +168,10 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
     return Ssac, Esac
 
 
-def making_clusters(xy):
+def making_clusters(xy, min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
+                   eps=None, xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto',
+                    leaf_size=30, n_jobs=None):
     X = np.vstack(xy)
-    print(X)
     clust = OPTICS(min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
                    eps=None,
                    xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto', leaf_size=30,

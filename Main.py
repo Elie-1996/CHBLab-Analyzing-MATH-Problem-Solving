@@ -22,7 +22,6 @@ if __name__ == '__main__':
     coordinate_list = []
     # converting to numpy array for later use
     time_array = df['Timestamp'].to_numpy()
-    print(time_array)
     x_array = df['RightX'].to_numpy()
     y_array = df['RightY'].to_numpy()
 
@@ -30,14 +29,10 @@ if __name__ == '__main__':
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
     testing_visualization = False
     if not testing_visualization:
-        for i, y in enumerate(y_array):
-            if y > 1 or y < 0:
-                print('Y data:', time_array[i], y)
-        for i, x in enumerate(x_array):
-            if x > 1 or x < 0:
-                print('X data:', time_array[i], x)
+
         real_x = x_array * 1366
         real_y = y_array * 768
+
         # some visualization (heat map)
         # Visualization.scatter_density(df)
         # finding fixations - more info about Sfix Efix in Analysis module
@@ -47,7 +42,7 @@ if __name__ == '__main__':
         for fix in Efix:
             fixation_list.append([fix[3], fix[4]])
 
-        #clusters = Analysis.making_clusters(fixation_list)
+        clusters = Analysis.making_clusters(fixation_list)
         # print(df)
     else:
         import numpy as np

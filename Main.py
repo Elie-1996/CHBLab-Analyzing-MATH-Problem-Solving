@@ -22,15 +22,15 @@ if __name__ == '__main__':
     coordinate_list = []
     # converting to numpy array for later use
     time_array = df['Timestamp'].to_numpy()
-    print(time_array)
     x_array = df['RightX'].to_numpy()
     y_array = df['RightY'].to_numpy()
 
+    # clean and analyze pupil diameter value
+    Analysis.pupils_preprocess(df)
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
     testing_visualization = False
     if not testing_visualization:
-
         real_x = x_array * 1366
         real_y = y_array * 768
 

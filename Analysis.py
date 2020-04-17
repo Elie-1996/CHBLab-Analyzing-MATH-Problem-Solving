@@ -2,11 +2,30 @@ import numpy as np
 from sklearn.cluster import OPTICS, cluster_optics_dbscan
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import Pupils
+from copy import deepcopy
 
+
+def pupils_preprocess(df):
+    """ function for pupils diameter data"""
+    # 1. remove blinks and interpolate the data
+
+    # 2. using hample filter for detection of outliers and interpolate them using median value of neighbors
+    Diameter = df['Diameter'].to_numpy()
+    new_series, detected_outliers = Pupils.hampel_filter_outliers(Diameter, 10)
+    df['Diameter'] = new_series
+
+    # 3. maybe smoothing the data again?
+
+    # 4. base line correction
+    base_value = Pupils.baseline(df['Diameter'])
+    Pupils.correction(df, base_value, subtraction=True)
+
+    # 5. getting relative change in size
+    Pupils.get_change(df)
 
 
 def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=5):
-
     """Detects fixations, defined as consecutive samples with an inter-sample
     distance of less than a set amount of pixels (disregarding missing data)
 
@@ -170,9 +189,8 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
     return Ssac, Esac
 
 
-
 def making_clusters(xy, min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
-                   eps=None, xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto',
+                    eps=None, xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto',
                     leaf_size=30, n_jobs=None):
     X = np.vstack(xy)
 

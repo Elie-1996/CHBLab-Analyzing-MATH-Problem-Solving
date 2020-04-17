@@ -22,6 +22,7 @@ if __name__ == '__main__':
     coordinate_list = []
     # converting to numpy array for later use
     time_array = df['Timestamp'].to_numpy()
+    print(time_array)
     x_array = df['RightX'].to_numpy()
     y_array = df['RightY'].to_numpy()
 
@@ -43,6 +44,7 @@ if __name__ == '__main__':
             fixation_list.append([fix[3], fix[4]])
 
         clusters = Analysis.making_clusters(fixation_list)
+
         # print(df)
     else:
         import numpy as np

@@ -4,7 +4,9 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 
 
+
 def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=5):
+
     """Detects fixations, defined as consecutive samples with an inter-sample
     distance of less than a set amount of pixels (disregarding missing data)
 
@@ -168,10 +170,12 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
     return Ssac, Esac
 
 
+
 def making_clusters(xy, min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
                    eps=None, xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto',
                     leaf_size=30, n_jobs=None):
     X = np.vstack(xy)
+
     clust = OPTICS(min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
                    eps=None,
                    xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto', leaf_size=30,

@@ -9,11 +9,13 @@ from warnings import warn
 from PIL import Image
 from Main import Data, load_input_data
 
+start_time_interval_slider: Scale
+end_time_interval_slider: Scale
+
 
 def setup_gui(vm: VisualizationMap):
     m = Tk()
     m.title('HeatMap')
-
     menu_button_frame = Frame()
 
     map_frame = Frame()
@@ -185,6 +187,7 @@ def read_points_from_file_chooser(vm, ax, canvas):
 
         load_input_data(pldata_dir=pldata_file, gazedata_dir=gazedata_file)
         vm.interpret_df(Data.denormalized_df)
+        update_sliders(vm, True)
         substitute_heatmap_plot(vm, ax, canvas)
 
 
@@ -238,20 +241,50 @@ def attempt_to_update_division(vm, ax, canvas, horizontal_division, vertical_div
 def time_widget(m, vm, ax, canvas):
     Label(m, text="Choose Timeframe (in seconds):").grid(row=1)
 
-    Label(m, text='From ').grid(row=2)
-    Label(m, text='To: ').grid(row=3)
-    start_time_interval_entry = Entry(m)
-    start_time_interval_entry.grid(row=2, column=1)
-    end_time_interval_entry = Entry(m)
-    end_time_interval_entry.grid(row=3, column=1)
+    max_time, slider_length, tick_interval = update_sliders(vm)
+    # define sliders
+    # slider 1
+    global start_time_interval_slider
+    Label(m, text='From: ').grid(row=2, column=0)
+    start_time_interval_slider = Scale(m, from_=0, to=max_time, tickinterval=tick_interval, length=slider_length,
+                                       orient=HORIZONTAL)
+    start_time_interval_slider.grid(row=2, column=1)
+
+    # slider 2
+    global end_time_interval_slider
+    Label(m, text='To: ').grid(row=3, column=0)
+    end_time_interval_slider = Scale(m, from_=0, to=max_time, tickinterval=tick_interval, length=slider_length,
+                                     orient=HORIZONTAL)
+    end_time_interval_slider.grid(row=3, column=1)
+
+    # confirm button
     confirmButton = Button(m, text="Confirm", width=16, command=lambda: attempt_to_update_timeframe(
         vm,
         ax,
         canvas,
-        start_time_interval_entry.get(),
-        end_time_interval_entry.get()
+        start_time_interval_slider.get(),
+        end_time_interval_slider.get()
     ))
     confirmButton.grid(row=4, column=1)
+
+
+def update_sliders(vm, configure=False):
+    # decide on slider parameters
+    max_time = vm.time_stamps.max()
+    if max_time <= 200:
+        max_time = 200
+    slider_length = max_time
+    if slider_length >= 600:
+        slider_length = 600
+    tick_interval = slider_length / 4
+
+    if configure:
+        start_time_interval_slider.configure(from_=0, to=max_time, tickinterval=tick_interval, length=slider_length,
+                                           orient=HORIZONTAL)
+        end_time_interval_slider.configure(from_=0, to=max_time, tickinterval=tick_interval, length=slider_length,
+                                         orient=HORIZONTAL)
+
+    return max_time, slider_length, tick_interval
 
 
 def bin_adjustment_widget(m, vm, ax, canvas):

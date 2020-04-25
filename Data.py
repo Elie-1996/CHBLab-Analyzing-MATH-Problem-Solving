@@ -9,9 +9,8 @@ class Data:
     denormalized_df = None
 
 
-def load_input_data():
+def load_input_data(pldata_dir='./000/pupil.pldata', gazedata_dir='./000/gaze.pldata'):
     # making the data frame for pupil data
-    pldata_dir = './000/pupil.pldata'
     with open(pldata_dir, 'rb') as f:
         pupil_data = [[msgpack.unpackb(payload)['timestamp'],
                        msgpack.unpackb(payload)['diameter'] / 10,
@@ -24,9 +23,7 @@ def load_input_data():
     pupil_data = pd.DataFrame(pupil_data, columns=['Timestamp', 'Diameter', 'Diameter_3d', 'norm_x', 'norm_y'])
 
     # making the data frame for gaze data
-    pldata_dir = './000/gaze.pldata'
-
-    with open(pldata_dir, 'rb') as f:
+    with open(gazedata_dir, 'rb') as f:
         gaze_data = [[msgpack.unpackb(payload)['timestamp'],
                       msgpack.unpackb(payload)['norm_pos'][0],
                       msgpack.unpackb(payload)['norm_pos'][1]]

@@ -17,7 +17,7 @@ def get_random_array_with_range(shape, min_range, max_range):
             df["Timestampe"] is the current frame Time stamp"""
 
 if __name__ == '__main__':
-    load_input_data()
+    load_input_data(pldata_dir='./000/pupil.pldata', gazedata_dir='./000/gaze.pldata')
     df = Data.normalized_df
     blinks_df = pd.read_csv('./000/blinks/blinks.csv')
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
-    testing_visualization = False
+    testing_visualization = True
     if not testing_visualization:
         real_x = x_array * 1366
         real_y = y_array * 768

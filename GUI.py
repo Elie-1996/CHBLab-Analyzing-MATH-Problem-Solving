@@ -1,10 +1,13 @@
 from tkinter import *
+from tkinter.filedialog import askopenfilename, askopenfilenames
 
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 from Visualization import VisualizationMap
 import numpy as np
 from warnings import warn
+from PIL import Image
+from Main import Data, load_input_data
 
 
 def setup_gui(vm: VisualizationMap):
@@ -12,10 +15,12 @@ def setup_gui(vm: VisualizationMap):
     m.title('HeatMap')
 
     menu_button_frame = Frame()
-    menu_buttons_widget(m, menu_button_frame)
 
     map_frame = Frame()
     hm_ax, hm_canvas = heatmap_widget(map_frame, vm)
+
+    # file chooser, exit, etc...
+    menu_buttons_widget(m, vm, menu_button_frame, hm_ax, hm_canvas)
 
     widgets_frame = Frame()
     time_widget(widgets_frame, vm, hm_ax, hm_canvas)
@@ -28,15 +33,14 @@ def setup_gui(vm: VisualizationMap):
     m.mainloop()
 
 
-def menu_buttons_widget(parent, m):
+def menu_buttons_widget(parent, vm, m, ax, canvas):
     mb = Menubutton(m, text="File")
     mb.grid()
     mb.menu = Menu(mb, tearoff=0)
     mb["menu"] = mb.menu
-    cVar = IntVar()
-    aVar = IntVar()
-    mb.menu.add_checkbutton(label='Load...', variable=cVar)
-    mb.menu.add_checkbutton(label='Exit', command=parent.destroy, variable=aVar)
+    mb.menu.add_command(label='Load Image...', command=lambda: read_image_from_file_chooser(vm, ax, canvas))
+    mb.menu.add_command(label='Load Points...', command=lambda: read_points_from_file_chooser(vm, ax, canvas))
+    mb.menu.add_command(label='Exit', command=parent.destroy)
     mb.pack()
 
 
@@ -160,6 +164,42 @@ def draw_ellipses(vm, ax):
 
 def draw_points(ax, x_list, y_list, s):
     ax.scatter(x_list, y_list, s=s, color=[255/256, 255/256, 255/256])
+
+
+def read_points_from_file_chooser(vm, ax, canvas):
+    files: tuple = askopenfilenames(title="Select PL/Gaze Data", initialdir='./000')
+    if len(files) != 2:
+        warn("\nMust select 2 files when selecting new pl/gaze data.\n<file1 = path/to/pldata>\n<file2 = "
+             "path/to/gazedata>")
+        return
+    else:
+
+        # send files in the right order
+        # swap if needed
+        pldata_file: str = files[0]
+        gazedata_file: str = files[1]
+        if pldata_file.endswith("gaze.pldata"):
+            tmp = pldata_file
+            pldata_file = gazedata_file
+            gazedata_file = tmp
+
+        load_input_data(pldata_dir=pldata_file, gazedata_dir=gazedata_file)
+        vm.interpret_df(Data.denormalized_df)
+        substitute_heatmap_plot(vm, ax, canvas)
+
+
+def read_image_from_file_chooser(vm, ax, canvas):
+    path = askopenfilename(title="Select Image", initialdir='./Problem Images')
+    if path == "":
+        return
+    else:
+        read_image_from_path(vm, path)
+        substitute_heatmap_plot(vm, ax, canvas)
+
+
+def read_image_from_path(vm, path="Problem Images/Test-Image-Sydney-Opera-House.jpg"):
+    image = np.array(Image.open(path))
+    vm.full_image = image
 
 
 def substitute_heatmap_plot(vm, ax, canvas):

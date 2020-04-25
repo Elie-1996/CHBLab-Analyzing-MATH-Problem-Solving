@@ -15,12 +15,10 @@ class VisualizationMap:
                  horizontal_bins=5, vertical_bins=5,
                  initial_interval_start=0, initial_interval_end=5,
                  pad_value=float("-inf")):
-        self.x_coords = df_as_dictionary['RightX']
-        self.y_coords = df_as_dictionary['RightY']
-        self.time_stamps = df_as_dictionary['Timestamp']
-        self.full_image = np.array(image)
         self.horizontal_bins = horizontal_bins
         self.vertical_bins = vertical_bins
+        self.interpret_df(df_as_dictionary, False)
+        self.full_image = np.array(image)
         self.bins = [[] for i in range(horizontal_bins * vertical_bins)]
         self.image_parts = self.__split_image_to_bins(
             self.full_image,
@@ -31,6 +29,15 @@ class VisualizationMap:
         self.time_interval_start = 0
         self.time_interval_end = 0
         self.update_interval(initial_interval_start, initial_interval_end)
+
+    # update should be set tp 'True' when used outside initializer
+    def interpret_df(self, df_as_dictionary, update=True):
+        self.x_coords = df_as_dictionary['RightX']
+        self.y_coords = df_as_dictionary['RightY']
+        self.time_stamps = df_as_dictionary['Timestamp']
+        if update:
+            self.update_bin_division(self.horizontal_bins, self.vertical_bins)
+
 
     def update_interval(self, time_interval_start, time_interval_end):
         self.time_interval_start = time_interval_start
@@ -67,8 +74,8 @@ class VisualizationMap:
     # returns the index of the bin that (x, y) is within in self.bins
     # note: must be in sync with @__split_image_to_bins
     def map_coordinate_to_bin_idx(self, x, y):
-        rows_amount, cols_amount = self.full_image.shape
-
+        shape = self.full_image.shape
+        rows_amount, cols_amount = shape[0], shape[1]
         horizontal_jump = ceil(cols_amount / self.horizontal_bins)
         amount_of_bins_to_the_right = floor(x / horizontal_jump)
 

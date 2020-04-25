@@ -1,6 +1,7 @@
 import Analysis
 from Visualization import Visualization, VisualizationMap
 from Data import Data, load_input_data
+import pandas as pd
 
 
 def get_random_array_with_range(shape, min_range, max_range):
@@ -18,6 +19,8 @@ def get_random_array_with_range(shape, min_range, max_range):
 if __name__ == '__main__':
     load_input_data()
     df = Data.normalized_df
+    blinks_df = pd.read_csv('./000/blinks/blinks.csv')
+
     fixation_list = []
     coordinate_list = []
     # converting to numpy array for later use
@@ -26,7 +29,8 @@ if __name__ == '__main__':
     y_array = df['RightY'].to_numpy()
 
     # clean and analyze pupil diameter value
-    Analysis.pupils_preprocess(df)
+    Analysis.pupils_preprocess(df, blinks_df)
+
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
     testing_visualization = False
@@ -37,15 +41,15 @@ if __name__ == '__main__':
         # some visualization (heat map)
         # Visualization.scatter_density(df)
         # finding fixations - more info about Sfix Efix in Analysis module
-        Sfix, Efix = Analysis.fixation_detection(real_x, real_y, time_array)
+        fixations_df = pd.read_csv('./000/fixations/fixations.csv')
         # find saccades - more info about Ssac Esac in Analysis module
         Ssac, Esac = Analysis.saccade_detection(real_x, real_y, time_array)
-        for fix in Efix:
-            fixation_list.append([fix[3], fix[4]])
+
+        for i, row in fixations_df.iterrows():
+            fixation_list.append([row['norm_pos_x'], row['norm_pos_y']])
 
         clusters = Analysis.making_clusters(fixation_list)
 
-        # print(df)
     else:
         import numpy as np
         import GUI

@@ -3,26 +3,45 @@ from sklearn.cluster import OPTICS, cluster_optics_dbscan
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import Pupils
-from copy import deepcopy
 
 
-def pupils_preprocess(df):
+def pupils_preprocess(df, blinks_df):
+    """" Prepossessing of pupil Diameter """
+
+    plt.plot(df['Diameter'], linewidth=1, markersize=3, label='raw')
+    # Getting blinks
+    blinks_df = blinks_df[blinks_df['confidence'] > 0.5]
+    # print(blinks_df['confidence'])
     """ function for pupils diameter data"""
     # 1. remove blinks and interpolate the data
+    # remove blinks (set as None)
+    for index, row in blinks_df.iterrows():
+        start_frame = row['start_frame_index']
+        end_frame = row['end_frame_index']
+        df['Diameter'].iloc[start_frame:end_frame] = None
+
+    # interpolate None rows
+    df['Diameter'] = df['Diameter'].interpolate(method='cubic')
 
     # 2. using hample filter for detection of outliers and interpolate them using median value of neighbors
     Diameter = df['Diameter'].to_numpy()
     new_series, detected_outliers = Pupils.hampel_filter_outliers(Diameter, 10)
     df['Diameter'] = new_series
 
-    # 3. maybe smoothing the data again?
+    # 3. gaussian filter on data
+    smooth = df['Diameter'].rolling(window=5, win_type='gaussian', center=True).mean(std=0.5)
+    df['Diameter'] = smooth
 
     # 4. base line correction
     base_value = Pupils.baseline(df['Diameter'])
     Pupils.correction(df, base_value, subtraction=True)
 
+    print(df['Diameter'])
+    plt.plot(df['Diameter'], linewidth=1, markersize=3, label='filtered')
+
     # 5. getting relative change in size
     Pupils.get_change(df)
+    plt.show()
 
 
 def fixation_detection(x, y, time, missing=0.0, maxdist=60, mindur=5):
@@ -189,15 +208,14 @@ def saccade_detection(x, y, time, missing=0.0, minlen=5, maxvel=40, maxacc=340):
     return Ssac, Esac
 
 
-def making_clusters(xy, min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
+def making_clusters(xy, min_samples=4, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
                     eps=None, xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto',
                     leaf_size=30, n_jobs=None):
     X = np.vstack(xy)
 
-    clust = OPTICS(min_samples=5, max_eps=np.inf, metric='minkowski', p=2, metric_params=None, cluster_method='xi',
-                   eps=None,
-                   xi=0.05, predecessor_correction=True, min_cluster_size=None, algorithm='auto', leaf_size=30,
-                   n_jobs=None).fit(X)
+    clust = OPTICS(min_samples=min_samples, max_eps=max_eps, metric=metric, p=p, metric_params=metric_params,
+                   cluster_method=cluster_method, eps=eps, xi=xi, predecessor_correction=predecessor_correction,
+                   min_cluster_size=min_cluster_size, algorithm=algorithm, leaf_size=leaf_size, n_jobs=n_jobs).fit(X)
 
     # Performs DBSCAN extraction for an arbitrary epsilon (0.5) .
     labels_050 = cluster_optics_dbscan(reachability=clust.reachability_,

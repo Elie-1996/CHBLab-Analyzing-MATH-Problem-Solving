@@ -1,6 +1,9 @@
+from pathlib import Path
 from warnings import warn
 import pandas as pd
 import msgpack
+from Data import Preprocessing
+
 
 # Before relying on this class whatsoever, it is absolutely necessary to call Data.set_data or, preferably by calling
 # This class will allow for the data to be available globally
@@ -197,15 +200,19 @@ class Data:
             return Data.fixation_data_normalized
         return Data.fixation_data
 
+    @staticmethod
+    def pupil_preprocess():
+        Preprocessing.pupil_preprocessing()
+
 
 def load_pupil_data(pldata_dir):
     # making the data frame for pupil data
     with open(pldata_dir, 'rb') as f:
-        pupil_data = [[msgpack.unpackb(payload)['timestamp'],
-                       msgpack.unpackb(payload)['diameter'] / 10,
-                       msgpack.unpackb(payload)['diameter_3d'],
-                       msgpack.unpackb(payload)['norm_pos'][0],
-                       msgpack.unpackb(payload)['norm_pos'][1]]
+        pupil_data = [[msgpack.unpackb(payload)[b'timestamp'],
+                       msgpack.unpackb(payload)[b'diameter'] / 10,
+                       msgpack.unpackb(payload)[b'diameter_3d'],
+                       msgpack.unpackb(payload)[b'norm_pos'][0],
+                       msgpack.unpackb(payload)[b'norm_pos'][1]]
                       for _, payload in msgpack.Unpacker(f)]
 
     # here we will create panda df and choose names for columns
@@ -216,9 +223,9 @@ def load_pupil_data(pldata_dir):
 def load_gaze_data(gazedata_dir):
     # making the data frame for gaze data
     with open(gazedata_dir, 'rb') as f:
-        gaze_data = [[msgpack.unpackb(payload)['timestamp'],
-                      msgpack.unpackb(payload)['norm_pos'][0],
-                      msgpack.unpackb(payload)['norm_pos'][1]]
+        gaze_data = [[msgpack.unpackb(payload)[b'timestamp'],
+                      msgpack.unpackb(payload)[b'norm_pos'][0],
+                      msgpack.unpackb(payload)[b'norm_pos'][1]]
                      for _, payload in msgpack.Unpacker(f)]
 
     # here we will create the panda df and choose names for columns (I didn't check for all possible columns yet)
@@ -234,7 +241,8 @@ def load_fixation_data(surface_fixation_dir):
 
 
 def load_blinks_data(blinks_data_dir):
-    blinks_df = pd.read_csv('./000/exports/000/blinks.csv')
+    PATH = Path('000', 'exports', '000', 'blinks.csv')
+    blinks_df = pd.read_csv(PATH)
     return blinks_df
 
 

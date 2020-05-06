@@ -171,8 +171,11 @@ def draw_points(ax, x_list, y_list, s):
 def read_points_from_file_chooser(vm, ax, canvas):
     files: tuple = askopenfilenames(title="Select PL/Gaze Data", initialdir='./000')
     if len(files) != 2:
-        warn("\nMust select 2 files when selecting new pl/gaze data.\n<file1 = path/to/pldata>\n<file2 = "
-             "path/to/gazedata>")
+        warn("""
+        Must select 2 files when selecting new pl/gaze data.
+        <file1 = path/to/pldata>
+        <file2 = path/to/gazedata>
+        """)
         return
     else:
 
@@ -185,8 +188,8 @@ def read_points_from_file_chooser(vm, ax, canvas):
             pldata_file = gazedata_file
             gazedata_file = tmp
 
-        load_input_data(pldata_dir=pldata_file, gazedata_dir=gazedata_file)
-        vm.interpret_df(Data.denormalized_df)
+        load_input_data(pupildata_dir=pldata_file, gazedata_dir=gazedata_file)
+        vm.interpret_df(Data.gaze_data)
         update_sliders(vm, True)
         substitute_heatmap_plot(vm, ax, canvas)
 
@@ -206,7 +209,6 @@ def read_image_from_path(vm, path="Problem Images/Test-Image-Sydney-Opera-House.
 
 
 def substitute_heatmap_plot(vm, ax, canvas):
-    # x_coords, y_coords = compute_relevant_coordinates(vm)
     ax.clear()
     ax.imshow(vm.full_image)
     x_coords, y_coords = compute_relevant_coordinates(vm)

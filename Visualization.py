@@ -30,10 +30,10 @@ class VisualizationMap:
         self.time_interval_end = 0
         self.update_interval(initial_interval_start, initial_interval_end)
 
-    # update should be set tp 'True' when used outside initializer
+    # update should be set to 'True' when used outside initializer
     def interpret_df(self, df_as_dictionary, update=True):
-        self.x_coords = df_as_dictionary['RightX']
-        self.y_coords = df_as_dictionary['RightY']
+        self.x_coords = df_as_dictionary['X']
+        self.y_coords = df_as_dictionary['Y']
         self.time_stamps = df_as_dictionary['Timestamp']
         if update:
             self.update_bin_division(self.horizontal_bins, self.vertical_bins)
@@ -140,8 +140,8 @@ class Visualization:
 
     @staticmethod
     def scatter_density(df):
-        x = df['RightX']
-        y = df['RightY']
+        x = df['X']
+        y = df['Y']
 
         # ################ Plotting ####################################################
         g6 = plt.figure(1)

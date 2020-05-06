@@ -132,3 +132,6 @@ dmypy.json
 .idea/CHBLab-Analyzing-MATH-Problem-Solving.iml
 *.xml
 *.iml
+
+# Documentation
+docs/_build

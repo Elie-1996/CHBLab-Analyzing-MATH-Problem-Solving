@@ -169,7 +169,7 @@ def draw_points(ax, x_list, y_list, s):
 
 
 def read_points_from_file_chooser(vm, ax, canvas):
-    files: tuple = askopenfilenames(title="Select PL/Gaze Data", initialdir='./000')
+    files: tuple = askopenfilenames(title="Select PL/Gaze DataLib", initialdir='./000')
     if len(files) != 2:
         warn("""
         Must select 2 files when selecting new pl/gaze data.

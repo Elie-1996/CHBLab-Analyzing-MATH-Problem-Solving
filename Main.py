@@ -1,20 +1,16 @@
 import Analysis
 from Utils import get_random_array_with_range
-from Data import Data, load_input_data
-from Visualization import VisualizationMap
+from DataLib.GetData import Data, load_input_data
+from Visualization import VisualizationMap, AOI
 
-if __name__ == '__main__':
-    load_input_data(
-        pupildata_dir='./000/pupil.pldata',
-        gazedata_dir='./000/gaze.pldata',
-        surface_fixation_dir='./000/exports/000/surfaces/fixations_on_surface_Surface 1.csv',
-        blinks_data_dir='./000/exports/000/blinks.csv'
-    )
 
-    # TODO: Need to integrate the cleaning function within the "Data" class.
-    if False:
-        # clean and analyze pupil diameter value
-        Analysis.pupils_preprocess(Data.pupil_data, Data.blinks_data)
+def main():
+    subject = '000'
+    aoi = AOI(1600, 900)
+    question_num = 1
+    aoi.create_aoi(question_num=question_num)
+    aoi.draw_aoi(question_num=question_num)
+    load_input_data(subject=subject)
 
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
@@ -25,7 +21,8 @@ if __name__ == '__main__':
         time_array = Data.gaze_data['Timestamp']
         Ssac, Esac = Analysis.saccade_detection(real_x, real_y, time_array)
 
-        fixation_list = list(map(lambda x_coord, y_coord: [x_coord, y_coord], Data.fixation_data['X'], Data.fixation_data['Y']))
+        fixation_list = list(
+            map(lambda x_coord, y_coord: [x_coord, y_coord], Data.fixation_data['X'], Data.fixation_data['Y']))
         clusters = Analysis.making_clusters(fixation_list)
 
     else:
@@ -65,3 +62,7 @@ if __name__ == '__main__':
         vm = VisualizationMap(image_contrast_stretched, test_df, 2, 3, 0, 20)
         vm.display_bin_data()
         GUI.setup_gui(vm)
+
+
+if __name__ == '__main__':
+    main()

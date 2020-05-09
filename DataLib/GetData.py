@@ -2,10 +2,10 @@ from pathlib import Path
 from warnings import warn
 import pandas as pd
 import msgpack
-from Data import Preprocessing
+from . import Preprocessing
 
 
-# Before relying on this class whatsoever, it is absolutely necessary to call Data.set_data or, preferably by calling
+# Before relying on this class whatsoever, it is absolutely necessary to call DataLib.set_data or, preferably by calling
 # This class will allow for the data to be available globally
 class Data:
     x_resolution = 0
@@ -57,7 +57,7 @@ class Data:
         diameter_3d_normalized = pupil_data['Diameter_3d']
         diameter_3d = pupil_data['Diameter_3d']  # TODO: This is wrong, need to use Daniel's normalization method.
 
-        # Update all pupil data in the Data class.
+        # Update all pupil data in the DataLib class.
         Data.pupil_data = pupil_data.copy(deep=True)
         Data.pupil_data['Timestamp'] = time_array
         Data.pupil_data['X'] = x_array
@@ -84,7 +84,7 @@ class Data:
         y_array_normalized = gaze_data['Y']
         y_array = y_array_normalized * y_scale
 
-        # Update all gaze data in the Data class.
+        # Update all gaze data in the DataLib class.
         Data.gaze_data = gaze_data.copy(deep=True)
         Data.gaze_data['Timestamp'] = time_array
         Data.gaze_data['X'] = x_array
@@ -110,7 +110,7 @@ class Data:
         duration_array = fixation_data['Duration']
         duration_array_normalized = fixation_data['Duration']
 
-        # Update all fixation data in the Data class.
+        # Update all fixation data in the DataLib class.
         Data.fixation_data = fixation_data.copy(deep=True)
         Data.fixation_data['Timestamp'] = time_array
         Data.fixation_data['X'] = x_array
@@ -141,7 +141,7 @@ class Data:
         end_frame_index_array = blinks_data['end_frame_index']
         index_array = blinks_data['index']
 
-        # Update all blinks data in the Data class.
+        # Update all blinks data in the DataLib class.
         Data.blinks_data = blinks_data.copy(deep=True)
         Data.blinks_data['start_timestamp'] = start_time_array
         Data.blinks_data['end_timestamp'] = end_time_array
@@ -162,7 +162,7 @@ class Data:
         :param x_res: the resolution of which to scale x
         :param y_res: the resolution of which to scale y
 
-        :return : sets all Data parameters as needed.
+        :return : sets all DataLib parameters as needed.
         """
 
         if x_res is None:
@@ -201,7 +201,7 @@ class Data:
         return Data.fixation_data
 
     @staticmethod
-    def pupil_preprocess():
+    def preprocess():
         Preprocessing.pupil_preprocessing()
 
 
@@ -222,14 +222,10 @@ def load_pupil_data(pldata_dir):
 
 def load_gaze_data(gazedata_dir):
     # making the data frame for gaze data
-    with open(gazedata_dir, 'rb') as f:
-        gaze_data = [[msgpack.unpackb(payload)[b'timestamp'],
-                      msgpack.unpackb(payload)[b'norm_pos'][0],
-                      msgpack.unpackb(payload)[b'norm_pos'][1]]
-                     for _, payload in msgpack.Unpacker(f)]
-
+    gaze_data_frame = pd.read_csv(gazedata_dir)
+    gaze_data_frame = gaze_data_frame[['world_timestamp', 'x_norm', 'y_norm']]
+    gaze_data_frame.columns = ['Timestamp', 'X', 'Y']
     # here we will create the panda df and choose names for columns (I didn't check for all possible columns yet)
-    gaze_data_frame = pd.DataFrame(gaze_data, columns=['Timestamp', 'X', 'Y'])
     return gaze_data_frame
 
 
@@ -240,19 +236,25 @@ def load_fixation_data(surface_fixation_dir):
     return fixation_data_frame
 
 
-def load_blinks_data(blinks_data_dir):
-    PATH = Path('000', 'exports', '000', 'blinks.csv')
-    blinks_df = pd.read_csv(PATH)
+def load_blinks_data(path):
+    blinks_df = pd.read_csv(path)
     return blinks_df
 
 
-def load_input_data(pupildata_dir='./000/pupil.pldata', gazedata_dir='./000/gaze.pldata',
-                    surface_fixation_dir='./000/exports/000/surfaces/fixations_on_surface_Surface 1.csv',
-                    blinks_data_dir='./000/exports/000/blinks.csv'):
-    pupil_data = load_pupil_data(pupildata_dir)
-    gaze_data = load_gaze_data(gazedata_dir)
-    fixation_data = load_fixation_data(surface_fixation_dir)
-    blinks_data = load_blinks_data(blinks_data_dir)
+def load_input_data(subject='000'):
+
+    pupil_path = Path(subject, 'pupil.pldata')
+    gaze_path = Path(subject, 'exports', subject, 'surfaces', 'gaze_positions_on_surface_Surface 1.csv')
+    fixations_path = Path(subject, 'exports', subject, 'surfaces', 'fixations_on_surface_Surface 1.csv')
+    blinks_path = Path(subject, 'exports', subject, 'blinks.csv')
+
+    pupil_data = load_pupil_data(pupil_path)
+    gaze_data = load_gaze_data(gaze_path)
+    fixation_data = load_fixation_data(fixations_path)
+    blinks_data = load_blinks_data(blinks_path)
 
     # TODO: Change resolution appropriately!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Data.set_data(pupil_data, gaze_data, fixation_data, blinks_data, x_res=600, y_res=200)
+
+    Data.preprocess()
+

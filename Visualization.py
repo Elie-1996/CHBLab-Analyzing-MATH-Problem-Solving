@@ -1,8 +1,13 @@
+from pathlib import Path
+import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import skimage.io  # image analysis functionality
 from scipy.stats import gaussian_kde
 from math import floor, ceil
 import numpy
+from collections import defaultdict
+from PIL import Image, ImageDraw
 
 
 # TODO: Should create GUI using Tkinter to visualize the graph later on (Timestamp can control where the user looked
@@ -37,7 +42,6 @@ class VisualizationMap:
         self.time_stamps = df_as_dictionary['Timestamp']
         if update:
             self.update_bin_division(self.horizontal_bins, self.vertical_bins)
-
 
     def update_interval(self, time_interval_start, time_interval_end):
         self.time_interval_start = time_interval_start
@@ -152,8 +156,70 @@ class Visualization:
         plt.hist2d(x, y, (40, 40), cmap=plt.jet())
         plt.colorbar()
         plt.tick_params(labelsize=10)
-        plt.title("Data density plot")
+        plt.title("DataLib density plot")
         plt.xlabel('Gaze coordinates (X) in pixels', fontsize=12)
         plt.ylabel('Gaze coordinates (Y) in pixels', fontsize=12)
         plt.tick_params(labelsize=16)
         plt.show()
+
+
+class AOI:
+    """ Class for drawing the AOI """
+
+    def __init__(self, screen_hight, screen_width):
+        self.screen_hight = screen_hight
+        self.screen_width = screen_width
+        self.AOI_dict = defaultdict(list)
+
+    def create_aoi(self, question_num=1, aoi_num=3):
+        plt.interactive(True)
+        aoi_counter = 1
+
+        # First we will go to Images lib and extract the image of the given question
+        img_path = Path('Images', f'{question_num}.jpeg')
+
+        # Then we will read it using scikit-image
+        img = skimage.io.imread(img_path)
+
+        while aoi_counter <= aoi_num:
+            # Plot image
+            with sns.axes_style("white"):
+                plt.imshow(img)
+
+            plt.title("Choose 2 Points for AOI (upper left and lower right)")
+            plt.show()
+
+            # Choose 2 Points (upper left and lower right)
+            points = plt.ginput(2)  # Will record two clicks.
+
+            new_points = []
+            # Nearest neighbour interpolation
+            for point in points:
+                new_points.append([round(point[0]), round(point[1])])
+
+            # Bound rectangle using chosen points
+            bound_rect = [new_points[0], None, None, new_points[1]]
+            bound_rect[1] = [new_points[0][0], new_points[1][1]]
+            bound_rect[2] = [new_points[0][1], new_points[1][0]]
+
+            print(bound_rect)
+
+            # Adding to the questions AOI dict
+            self.AOI_dict[str(question_num)].append(bound_rect)
+            aoi_counter += 1
+
+    def draw_aoi(self, question_num=1):
+        """ Function from drawing rectangle for each AOI of the given question """
+
+        # First we will go to Images lib and extract the image of the given question
+        img_path = Path('Images', f'{question_num}.jpeg')
+
+        img = Image.open(img_path)
+        draw = ImageDraw.Draw(img)
+
+        for aoi in self.AOI_dict[str(question_num)]:
+            print((aoi[0][0], aoi[0][1], aoi[3][0], aoi[3][1]))
+            draw.rectangle((aoi[0][0], aoi[0][1], aoi[3][0], aoi[3][1]), outline=(30, 82, 255))
+
+        img.show()
+

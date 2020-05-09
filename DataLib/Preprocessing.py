@@ -1,15 +1,16 @@
-from Data.GetData import Data
+from . import GetData
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+############################################################################
 BASELINE = 0, 10
 
 
 def pupil_preprocessing():
     """" Prepossessing of pupil Diameter """
-    pupil_df = Data.pupil_data
-    blinks_df = Data.blinks_data
+    pupil_df = GetData.Data.pupil_data
+    blinks_df = GetData.Data.blinks_data
     plt.plot(pupil_df['Diameter'], linewidth=1, markersize=3, label='raw')
 
     # Getting blinks above some confidence threshold
@@ -28,12 +29,16 @@ def pupil_preprocessing():
 
     # 2. using hample filter for detection of outliers and interpolate them using median value of neighbors
     Diameter = pupil_df['Diameter'].to_numpy()
-    new_series, detected_outliers = hampel_filter_outliers(Diameter, 10)
+    new_series, detected_outliers = hampel_filter_outliers(Diameter, 12)
     pupil_df['Diameter'] = new_series
 
     # 3. gaussian filter on data
-    smooth = pupil_df['Diameter'].rolling(window=5, win_type='gaussian', center=True).mean(std=0.5)
-    pupil_df['Diameter'] = smooth
+    smooth = pupil_df['Diameter'].rolling(window=5, win_type='gaussian').mean(std=100)
+    epsilon = 0.8
+
+    for i, row in pupil_df.iterrows():
+        if not abs(row['Diameter'] - smooth[i]) <= epsilon:
+            pupil_df['Diameter'].iloc[i] = smooth[i]
 
     # 4. base line correction
     base_value = baseline(pupil_df['Diameter'])
@@ -42,7 +47,7 @@ def pupil_preprocessing():
     print(pupil_df['Diameter'])
     plt.plot(pupil_df['Diameter'], linewidth=1, markersize=3, label='filtered')
 
-    # 5. getting relative change in size
+    # 5. get relative change in size (PCT)
     get_change(pupil_df)
     plt.show()
 
@@ -108,3 +113,5 @@ def hampel_filter_outliers(input_series, window_size=10, n_sigmas=3):
             indices.append(i)
 
     return new_series, indices
+
+############################################################################

@@ -8,9 +8,9 @@ def main():
     subject = '000'
     aoi = AOI(1600, 900)
     question_num = 1
-    aoi.create_aoi(question_num=question_num)
-    aoi.draw_aoi(question_num=question_num)
-    load_input_data(subject=subject)
+    # aoi.create_aoi(question_num=question_num)
+    # aoi.draw_aoi(question_num=question_num)
+    load_input_data(30, 30, subject=subject)
 
     # TODO: the if and else here will be removed once we are finished with the testing phase of HeatMap Implementation
     #  pushed with testing_visualization = False to keep the old behaviour of the program on Master.
@@ -36,7 +36,7 @@ def main():
         if should_display_image:
             import matplotlib.pyplot as plt
 
-            plt.imshow(image)
+            plt.imshow(image, origin='lower')
             plt.show()
 
         test_df = {"X": [], "Y": [], 'Timestamp': np.arange(0, 20, 0.5)}  # 20/0.5 = 40 Samples!

@@ -115,3 +115,21 @@ def hampel_filter_outliers(input_series, window_size=10, n_sigmas=3):
     return new_series, indices
 
 ############################################################################
+
+
+def filter_out_exceeding_gazes():
+    gaze_df = GetData.Data.gaze_data_normalized
+    X_coords = gaze_df['X']
+    Y_coords = gaze_df['Y']
+    indices_to_remove = []
+    for i in range(len(X_coords)):
+        x = X_coords[i]
+        y = Y_coords[i]
+        if (not 0 <= x <= 1) or (not 0 <= y <= 1):
+            indices_to_remove.append(i)
+
+    indices_to_remove.sort(reverse=True)
+    for index in indices_to_remove:
+        for column in GetData.Data.gaze_data_normalized:
+            del GetData.Data.gaze_data_normalized[column][index]
+            del GetData.Data.gaze_data[column][index]

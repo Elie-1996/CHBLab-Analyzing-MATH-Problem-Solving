@@ -41,7 +41,10 @@ def menu_buttons_widget(parent, vm, m, ax, canvas):
     mb.menu = Menu(mb, tearoff=0)
     mb["menu"] = mb.menu
     mb.menu.add_command(label='Load Image...', command=lambda: read_image_from_file_chooser(vm, ax, canvas))
-    mb.menu.add_command(label='Load Points...', command=lambda: read_points_from_file_chooser(vm, ax, canvas))
+    mb.menu.add_command(label='Load Gaze Points...',
+                        command=lambda: read_points_from_file_chooser(vm, ax, canvas, True))
+    mb.menu.add_command(label='Load Pupil Points...',
+                        command=lambda: read_points_from_file_chooser(vm, ax, canvas, False))
     mb.menu.add_command(label='Exit', command=parent.destroy)
     mb.pack()
 
@@ -168,29 +171,31 @@ def draw_points(ax, x_list, y_list, s):
     ax.scatter(x_list, y_list, s=s, color=[255/256, 255/256, 255/256])
 
 
-def read_points_from_file_chooser(vm, ax, canvas):
-    files: tuple = askopenfilenames(title="Select PL/Gaze DataLib", initialdir='./000')
-    if len(files) != 2:
+def read_points_from_file_chooser(vm, ax, canvas, load_gaze):
+    title = "Select Pupil Data"
+    if (load_gaze == True):
+        title = "Select Gaze Data"
+    files: tuple = askopenfilenames(title=title, initialdir='./000')
+    if len(files) != 1:
         warn("""
-        Must select 2 files when selecting new pl/gaze data.
-        <file1 = path/to/pldata>
+        Must select 1 file when selecting new pl/gaze data.
+        <file1 = path/to/pldata> (OR)
         <file2 = path/to/gazedata>
         """)
         return
     else:
+        pldata_file = files[0]
+        gazedata_file = files[0]
+        if load_gaze == True:
+            pldata_file = None
+        else:
+            gazedata_file = None
 
-        # send files in the right order
-        # swap if needed
-        pldata_file: str = files[0]
-        gazedata_file: str = files[1]
-        if pldata_file.endswith("gaze.pldata"):
-            tmp = pldata_file
-            pldata_file = gazedata_file
-            gazedata_file = tmp
-
-        load_input_data(pupildata_dir=pldata_file, gazedata_dir=gazedata_file)
-        vm.interpret_df(Data.gaze_data)
+        y_scale, x_scale = vm.full_image.shape[0], vm.full_image.shape[1]
+        load_input_data(x_scale, y_scale, pupildata_dir=pldata_file, gazedata_dir=gazedata_file, fixationdata_dir=None,
+                        blinksdata_dir=None)
         update_sliders(vm, True)
+        vm.interpret_df(Data.gaze_data)
         substitute_heatmap_plot(vm, ax, canvas)
 
 
@@ -205,12 +210,12 @@ def read_image_from_file_chooser(vm, ax, canvas):
 
 def read_image_from_path(vm, path="Problem Images/Test-Image-Sydney-Opera-House.jpg"):
     image = np.array(Image.open(path))
-    vm.full_image = image
+    vm.update_image(image)
 
 
 def substitute_heatmap_plot(vm, ax, canvas):
     ax.clear()
-    ax.imshow(vm.full_image)
+    ax.imshow(vm.full_image, origin='lower')
     x_coords, y_coords = compute_relevant_coordinates(vm)
     draw_points(ax, x_coords, y_coords, s=12)
     draw_ellipses(vm, ax)

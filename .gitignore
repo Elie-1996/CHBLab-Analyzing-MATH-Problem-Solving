@@ -135,3 +135,5 @@ dmypy.json
 
 # Documentation
 docs/_build
+000/world.mp4
+*.mp4

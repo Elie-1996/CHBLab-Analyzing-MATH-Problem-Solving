@@ -176,10 +176,14 @@ class Data:
         if x_res is None or x_res <= 0 or y_res is None or y_res <= 0:
             raise Exception("Raw data has incorrect scaled entered: either None or non-positive.")
 
-        Data.set_pupil_data(pupil, x_res, y_res)
-        Data.set_gaze_data(gaze, x_res, y_res)
-        Data.set_fixation_data(fixation, x_res, y_res)
-        Data.set_blinks_data(blinks, x_res, y_res)
+        if pupil is not None:
+            Data.set_pupil_data(pupil, x_res, y_res)
+        if gaze is not None:
+            Data.set_gaze_data(gaze, x_res, y_res)
+        if fixation is not None:
+            Data.set_fixation_data(fixation, x_res, y_res)
+        if blinks is not None:
+            Data.set_blinks_data(blinks, x_res, y_res)
         pass
 
     @staticmethod
@@ -202,17 +206,18 @@ class Data:
 
     @staticmethod
     def preprocess():
+        Preprocessing.filter_out_exceeding_gazes()
         Preprocessing.pupil_preprocessing()
 
 
 def load_pupil_data(pldata_dir):
     # making the data frame for pupil data
     with open(pldata_dir, 'rb') as f:
-        pupil_data = [[msgpack.unpackb(payload)[b'timestamp'],
-                       msgpack.unpackb(payload)[b'diameter'] / 10,
-                       msgpack.unpackb(payload)[b'diameter_3d'],
-                       msgpack.unpackb(payload)[b'norm_pos'][0],
-                       msgpack.unpackb(payload)[b'norm_pos'][1]]
+        pupil_data = [[msgpack.unpackb(payload)['timestamp'],
+                       msgpack.unpackb(payload)['diameter'] / 10,
+                       msgpack.unpackb(payload)['diameter_3d'],
+                       msgpack.unpackb(payload)['norm_pos'][0],
+                       msgpack.unpackb(payload)['norm_pos'][1]]
                       for _, payload in msgpack.Unpacker(f)]
 
     # here we will create panda df and choose names for columns
@@ -236,25 +241,39 @@ def load_fixation_data(surface_fixation_dir):
     return fixation_data_frame
 
 
+def load_input_data(x_res, y_res,
+                    subject='000',
+                    pupildata_dir='pupil.pldata',
+                    gazedata_dir='gaze_positions_on_surface_Surface 1.csv',
+                    fixationdata_dir='fixations_on_surface_Surface 1.csv',
+                    blinksdata_dir='blinks.csv',
+                    ):
+    pupil_data, gaze_data, fixation_data, blinks_data = None, None, None, None
+
+    if pupildata_dir is not None:
+        pupil_path = Path(subject, pupildata_dir)
+        pupil_data = load_pupil_data(pupil_path)
+
+    if gazedata_dir is not None:
+        gaze_path = Path(subject, 'exports', subject, 'surfaces', gazedata_dir)
+        gaze_data = load_gaze_data(gaze_path)
+
+    if fixationdata_dir is not None:
+        fixations_path = Path(subject, 'exports', subject, 'surfaces', fixationdata_dir)
+        fixation_data = load_fixation_data(fixations_path)
+
+    if blinksdata_dir is not None:
+        blinks_path = Path(subject, 'exports', subject, blinksdata_dir)
+        blinks_data = load_blinks_data(blinks_path)
+
+    Data.set_data(pupil_data, gaze_data, fixation_data, blinks_data, x_res=x_res, y_res=y_res)
+
+    Data.preprocess()
+
+
 def load_blinks_data(path):
     blinks_df = pd.read_csv(path)
     return blinks_df
 
 
-def load_input_data(subject='000'):
-
-    pupil_path = Path(subject, 'pupil.pldata')
-    gaze_path = Path(subject, 'exports', subject, 'surfaces', 'gaze_positions_on_surface_Surface 1.csv')
-    fixations_path = Path(subject, 'exports', subject, 'surfaces', 'fixations_on_surface_Surface 1.csv')
-    blinks_path = Path(subject, 'exports', subject, 'blinks.csv')
-
-    pupil_data = load_pupil_data(pupil_path)
-    gaze_data = load_gaze_data(gaze_path)
-    fixation_data = load_fixation_data(fixations_path)
-    blinks_data = load_blinks_data(blinks_path)
-
-    # TODO: Change resolution appropriately!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Data.set_data(pupil_data, gaze_data, fixation_data, blinks_data, x_res=600, y_res=200)
-
-    Data.preprocess()
 

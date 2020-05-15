@@ -1,12 +1,12 @@
 {
-    "duration_s": 20.402165999999852,
+    "duration_s": 86.19268000000011,
     "meta_version": "2.1",
     "min_player_version": "1.16",
-    "recording_name": "2020_04_26",
+    "recording_name": "2020_05_15",
     "recording_software_name": "Pupil Capture",
     "recording_software_version": "1.22.7",
-    "recording_uuid": "155b88e3-5229-4f5a-951b-3556bbcd533e",
-    "start_time_synced_s": 24118.97676,
-    "start_time_system_s": 1587905840.0531518,
+    "recording_uuid": "02dfca0b-b7d8-4882-b75c-87c762393ab8",
+    "start_time_synced_s": 38818.200033,
+    "start_time_system_s": 1589559020.250023,
     "system_info": "User: Eli_a, Platform: Windows, Machine: LAPTOP-484PS8LU, Release: 10, Version: 10.0.18362"
 }

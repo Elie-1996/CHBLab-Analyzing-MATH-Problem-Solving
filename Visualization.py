@@ -10,10 +10,14 @@ from collections import defaultdict
 from PIL import Image, ImageDraw
 
 
-# TODO: Should create GUI using Tkinter to visualize the graph later on (Timestamp can control where the user looked
-#  at that specific timestamp, scrollbar to see different timestamp, visualize other data, etc.)
-# TODO: Information on Tkinter: https://www.geeksforgeeks.org/python-gui-tkinter/
-# TODO: Integrating Tkinter and Matplotlib: https://www.youtube.com/watch?v=JQ7QP5rPvjU
+X_RESOLUTION_LEFT_BIAS = 23
+X_RESOLUTION_RIGHT_BIAS = 23
+Y_RESOLUTION_TOP_BIAS = 39
+Y_RESOLUTION_BOTTOM_BIAS = 149
+
+
+# GUIDE: Information on Tkinter: https://www.geeksforgeeks.org/python-gui-tkinter/
+# GUIDE: Integrating Tkinter and Matplotlib: https://www.youtube.com/watch?v=JQ7QP5rPvjU
 class VisualizationMap:
 
     def __init__(self, image, df_as_dictionary,
@@ -23,7 +27,11 @@ class VisualizationMap:
         self.horizontal_bins = horizontal_bins
         self.vertical_bins = vertical_bins
         self.interpret_df(df_as_dictionary, False)
-        self.full_image = np.array(image)
+
+        # update image
+        self.full_image = np.array([])  # empty initialization
+        self.update_image(image)  # immediately update
+
         self.bins = [[] for i in range(horizontal_bins * vertical_bins)]
         self.image_parts = self.__split_image_to_bins(
             self.full_image,
@@ -35,11 +43,28 @@ class VisualizationMap:
         self.time_interval_end = 0
         self.update_interval(initial_interval_start, initial_interval_end)
 
+    # updates the image with zero padding to represent the surface boundaries accurately :)
+    def update_image(self, new_image):
+        new_image = self.image_to_2d(new_image)
+        shape = new_image.shape
+        padded_image = np.zeros((shape[0] + Y_RESOLUTION_BOTTOM_BIAS + Y_RESOLUTION_TOP_BIAS,
+                                 shape[1] + X_RESOLUTION_LEFT_BIAS + X_RESOLUTION_RIGHT_BIAS))
+        padded_image[Y_RESOLUTION_BOTTOM_BIAS:(Y_RESOLUTION_BOTTOM_BIAS + shape[0]),
+                    X_RESOLUTION_LEFT_BIAS:(X_RESOLUTION_LEFT_BIAS + shape[1])] = new_image[:, :]
+
+        self.full_image = np.array(padded_image)
+
+    @staticmethod
+    def image_to_2d(image):
+        if len(image.shape) == 3:
+            return image[:, :, 0]
+        return image
+
     # update should be set to 'True' when used outside initializer
     def interpret_df(self, df_as_dictionary, update=True):
-        self.x_coords = df_as_dictionary['X']
-        self.y_coords = df_as_dictionary['Y']
-        self.time_stamps = df_as_dictionary['Timestamp']
+        self.x_coords = np.array(df_as_dictionary['X'])
+        self.y_coords = np.array(df_as_dictionary['Y'])
+        self.time_stamps = np.array(df_as_dictionary['Timestamp'])
         if update:
             self.update_bin_division(self.horizontal_bins, self.vertical_bins)
 
@@ -71,9 +96,10 @@ class VisualizationMap:
         time_stamp = self.time_stamps
         coordinates_within_timestamp = []
         for i in range(len(time_stamp)):
+            current = time_stamp[i]
             if self.time_interval_start <= time_stamp[i] <= self.time_interval_end:
                 coordinates_within_timestamp.append(coordinates[i])
-        return coordinates_within_timestamp
+        return np.array(coordinates_within_timestamp)
 
     # returns the index of the bin that (x, y) is within in self.bins
     # note: must be in sync with @__split_image_to_bins

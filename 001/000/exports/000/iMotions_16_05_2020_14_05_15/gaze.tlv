@@ -1,0 +1,1 @@
+GazeTimeStamp	MediaTimeStamp	MediaFrameIndex	Gaze3dX	Gaze3dY	Gaze3dZ	Gaze2dX	Gaze2dY	PupilDiaLeft	PupilDiaRight	Confidence

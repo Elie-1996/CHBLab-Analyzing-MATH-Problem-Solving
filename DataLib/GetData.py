@@ -7,6 +7,7 @@ from . import Preprocessing
 
 # Before relying on this class whatsoever, it is absolutely necessary to call DataLib.set_data or, preferably by calling
 # This class will allow for the data to be available globally
+
 class Data:
     x_resolution = 0
     y_resolution = 0
@@ -42,7 +43,7 @@ class Data:
     # =============== helper methods (not to be used outside class) ===================
     @staticmethod
     def set_pupil_data(pupil_data, x_scale, y_scale):
-        # start counting time from 0 for both normalized and regular data.
+        # start counting time from 0 for both normalized and regular data
         time_array = pupil_data['Timestamp']
         time_array = time_array - time_array[0]
         time_array_normalized = time_array.copy(deep=True)
@@ -111,18 +112,19 @@ class Data:
         duration_array = fixation_data['Duration']
         duration_array_normalized = fixation_data['Duration']
 
-        # Update all fixation data in the DataLib class.
-        Data.fixation_data = fixation_data.copy(deep=True)
-        Data.fixation_data['Timestamp'] = time_array
-        Data.fixation_data['X'] = x_array
-        Data.fixation_data['Y'] = y_array
-        Data.fixation_data['Duration'] = duration_array
-
         Data.fixation_data_normalized = fixation_data.copy(deep=True)
         Data.fixation_data_normalized['Timestamp'] = time_array_normalized
         Data.fixation_data_normalized['X'] = x_array_normalized
         Data.fixation_data_normalized['Y'] = y_array_normalized
         Data.fixation_data_normalized['Duration'] = duration_array_normalized
+
+
+        # Update all fixation data in the DataLib class.
+        Data.fixation_data = Data.fixation_data_normalized.copy(deep=True)
+        Data.fixation_data['Timestamp'] = time_array
+        Data.fixation_data['X'] = x_array
+        Data.fixation_data['Y'] = y_array
+        Data.fixation_data['Duration'] = duration_array
 
     @staticmethod
     def set_blinks_data(blinks_data, x_scale, y_scale):

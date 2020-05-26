@@ -190,14 +190,17 @@ class Visualization:
 
 
 class AOI:
-    """ Class for drawing the AOI """
+    """ Class for creating and drawing the AOI """
+    screen_hight = 0
+    screen_width = 0
+    AOI_dict = defaultdict(list)
+    AOI_dict = {"1": [[[130.0, 1588.0], [130.0, 1427.0], [286.0, 1588.0], [286.0, 1427.0]],
+                           [[140.0, 1385.0], [140.0, 1122.0], [396.0, 1385.0], [396.0, 1122.0]],
+                           [[121.0, 1075.0], [121.0, 705.0], [476.0, 1075.0], [476.0, 705.0]]]
+                     }
 
-    def __init__(self, screen_hight, screen_width):
-        self.screen_hight = screen_hight
-        self.screen_width = screen_width
-        self.AOI_dict = defaultdict(list)
-
-    def create_aoi(self, question_num=1, aoi_num=3):
+    @ staticmethod
+    def create_aoi(question_num=1, aoi_num=3):
         plt.interactive(True)
         aoi_counter = 1
 
@@ -221,19 +224,20 @@ class AOI:
             new_points = []
             # Nearest neighbour interpolation
             for point in points:
-                new_points.append([round(point[0]), round(point[1])])
+                new_points.append([round(point[0]), AOI.screen_hight - round(point[1])])
 
             # Bound rectangle using chosen points
             bound_rect = [new_points[0], None, None, new_points[1]]
             bound_rect[1] = [new_points[0][0], new_points[1][1]]
-            bound_rect[2] = [new_points[0][1], new_points[1][0]]
+            bound_rect[2] = [new_points[1][0], new_points[0][1]]
 
             print(bound_rect)
 
             # Adding to the questions AOI dict
-            self.AOI_dict[str(question_num)].append(bound_rect)
+            AOI.AOI_dict[str(question_num)].append(bound_rect)
             aoi_counter += 1
 
+    @ staticmethod
     def draw_aoi(self, question_num=1):
         """ Function from drawing rectangle for each AOI of the given question """
 
@@ -243,7 +247,7 @@ class AOI:
         img = Image.open(img_path)
         draw = ImageDraw.Draw(img)
 
-        for aoi in self.AOI_dict[str(question_num)]:
+        for aoi in AOI.AOI_dict[str(question_num)]:
             print((aoi[0][0], aoi[0][1], aoi[3][0], aoi[3][1]))
             draw.rectangle((aoi[0][0], aoi[0][1], aoi[3][0], aoi[3][1]), outline=(30, 82, 255))
 

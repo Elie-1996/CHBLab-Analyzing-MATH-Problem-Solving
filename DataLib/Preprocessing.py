@@ -47,7 +47,6 @@ def pupil_preprocessing():
     base_value = baseline(pupil_df['Diameter'])
     correction(pupil_df, base_value, subtraction=True)
 
-    print(pupil_df['Diameter'])
     plt.plot(pupil_df['Diameter'], linewidth=1, markersize=3, label='filtered')
 
     # 5. get relative change in size (PCT)

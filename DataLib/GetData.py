@@ -76,6 +76,7 @@ class Data:
     def set_gaze_data(gaze_data, x_scale, y_scale):
         # start counting time from 0 for both normalized and regular data.
         time_array = gaze_data['Timestamp']
+        print(gaze_data)
         time_array = time_array - time_array[0]
         time_array_normalized = time_array.copy(deep=True)
 
@@ -213,11 +214,11 @@ class Data:
 def load_pupil_data(pldata_dir):
     # making the data frame for pupil data
     with open(pldata_dir, 'rb') as f:
-        pupil_data = [[msgpack.unpackb(payload)['timestamp'],
-                       msgpack.unpackb(payload)['diameter'] / 10,
-                       msgpack.unpackb(payload)['diameter_3d'],
-                       msgpack.unpackb(payload)['norm_pos'][0],
-                       msgpack.unpackb(payload)['norm_pos'][1]]
+        pupil_data = [[msgpack.unpackb(payload)[b'timestamp'],
+                       msgpack.unpackb(payload)[b'diameter'] / 10,
+                       msgpack.unpackb(payload)[b'diameter_3d'],
+                       msgpack.unpackb(payload)[b'norm_pos'][0],
+                       msgpack.unpackb(payload)[b'norm_pos'][1]]
                       for _, payload in msgpack.Unpacker(f)]
 
     # here we will create panda df and choose names for columns
@@ -255,15 +256,15 @@ def load_input_data(x_res, y_res,
         pupil_data = load_pupil_data(pupil_path)
 
     if gazedata_dir is not None:
-        gaze_path = Path(subject, 'exports', subject, 'surfaces', gazedata_dir)
+        gaze_path = Path(subject, 'exports', '000', 'surfaces', gazedata_dir)
         gaze_data = load_gaze_data(gaze_path)
 
     if fixationdata_dir is not None:
-        fixations_path = Path(subject, 'exports', subject, 'surfaces', fixationdata_dir)
+        fixations_path = Path(subject, 'exports', '000', 'surfaces', fixationdata_dir)
         fixation_data = load_fixation_data(fixations_path)
 
     if blinksdata_dir is not None:
-        blinks_path = Path(subject, 'exports', subject, blinksdata_dir)
+        blinks_path = Path(subject, 'exports', '000', blinksdata_dir)
         blinks_data = load_blinks_data(blinks_path)
 
     Data.set_data(pupil_data, gaze_data, fixation_data, blinks_data, x_res=x_res, y_res=y_res)

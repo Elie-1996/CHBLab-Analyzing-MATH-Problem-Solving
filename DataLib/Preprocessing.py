@@ -33,12 +33,15 @@ def pupil_preprocessing():
     pupil_df['Diameter'] = new_series
 
     # 3. gaussian filter on data
-    smooth = pupil_df['Diameter'].rolling(window=5, win_type='gaussian').mean(std=100)
-    epsilon = 0.8
+    pupil_df['Diameter'] = pupil_df['Diameter'].iloc[3:].rolling(window=3, win_type='gaussian').mean(std=100)
+    smooth_mean = pupil_df['Diameter'].mean()
 
+    # Cleaning really noisy places
+    epsilon = 1
     for i, row in pupil_df.iterrows():
-        if not abs(row['Diameter'] - smooth[i]) <= epsilon:
-            pupil_df['Diameter'].iloc[i] = smooth[i]
+        # if the value is far from the mean by more then epsilon we will replace it with the previous value
+        if not abs(smooth_mean - row['Diameter']) <= epsilon:
+            row['Diameter'] = pupil_df['Diameter'].iloc[i-1]
 
     # 4. base line correction
     base_value = baseline(pupil_df['Diameter'])

@@ -14,9 +14,9 @@ class VideoHeatmapper:
         self.img_heatmapper = img_heatmapper
 
     def heatmap_on_video(self, base_video, points,
-                         heat_fps=20,
+                         heat_fps=100,
                          keep_heat=True,
-                         heat_decay_s=None):
+                         heat_decay_s=5):
         width, height = base_video.size
 
         frame_points = self._frame_points(
@@ -25,8 +25,12 @@ class VideoHeatmapper:
             keep_heat=keep_heat,
             heat_decay_s=heat_decay_s
         )
-        heatmap_frames = self._heatmap_frames(width, height, frame_points)
+        heatmap_frames = list(self._heatmap_frames(width, height, frame_points))
         heatmap_clips = self._heatmap_clips(heatmap_frames, heat_fps)
+        clips_list = list(heatmap_clips)
+        heatmap_list = []
+        clips_num = len(clips_list)
+
 
         return CompositeVideoClip([base_video] + list(heatmap_clips))
 
@@ -37,8 +41,8 @@ class VideoHeatmapper:
     def heatmap_on_image(self, base_img, points,
                          heat_fps=20,
                          duration_s=None,
-                         keep_heat=False,
-                         heat_decay_s=None):
+                         keep_heat=True,
+                         heat_decay_s=2000):
         base_img = np.array(base_img)
         points = list(points)
         if not duration_s:
@@ -56,7 +60,7 @@ class VideoHeatmapper:
                               heat_fps=20,
                               duration_s=None,
                               keep_heat=False,
-                              heat_decay_s=None):
+                              heat_decay_s=12):
         base_img = Image.open(base_img_path)
         return self.heatmap_on_image(
             base_img, points,
@@ -67,7 +71,7 @@ class VideoHeatmapper:
         )
 
     @staticmethod
-    def _frame_points(pts, fps, keep_heat=False, heat_decay_s=None):
+    def _frame_points(pts, fps, keep_heat=True, heat_decay_s=None):
         interval = 1000 // fps
         frames = defaultdict(list)
 
@@ -80,10 +84,10 @@ class VideoHeatmapper:
 
         pts = list(pts)
         last_interval = max(t for x, y, t in pts)
-
+        heat_decay_s = False
         for x, y, t in pts:
             start = (t // interval) * interval
-            pt_last_interval = int(start + heat_decay_s*1000) if heat_decay_s else last_interval
+            pt_last_interval = int(start + heat_decay_s) if heat_decay_s else last_interval
             for frame_time in range(start, pt_last_interval+1, interval):
                 frames[frame_time].append((x, y))
 

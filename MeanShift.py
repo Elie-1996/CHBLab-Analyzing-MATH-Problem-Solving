@@ -58,18 +58,6 @@ n_clusters_ = len(labels_unique)
 
 print("Finish clustering")
 
-# # Finally We plot the centroids
-# fig = plt.figure()
-# image_path = os.path.join('Heatmap', 'BackgroundImage.jpg')
-# img = Image.open(image_path)
-# img = ImageOps.flip(img)
-# ax = fig.add_subplot(111)
-# # ax.scatter(data[:, 0], data[:, 1], marker='o')
-# print(cluster_centers)
-# ax.scatter(cluster_centers[:, 0], cluster_centers[:, 1], marker='o', color='red', s=300, linewidth=5, zorder=10)
-# plt.imshow(img, origin='lower')
-# plt.show()
-
 # Plot result
 import matplotlib.pyplot as plt
 from itertools import cycle
@@ -83,7 +71,6 @@ img = ImageOps.flip(img)
 colors = cycle('bgrcmykbgrcmykbgrcmykbgrcmyk')
 for k, col in zip(range(n_clusters_), colors):
     my_members = [i for i, x in enumerate(labels) if x == k]
-    # my_members = labels == k
     cluster_center = cluster_centers[k]
     plt.plot(X[my_members, 0], X[my_members, 1], col + '.')
     plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)

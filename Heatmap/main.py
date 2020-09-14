@@ -20,11 +20,11 @@ question_3_009 = (584, 714)
 # question_3_010 = (431, 527)
 question_3_1000 = (316, 414)
 
-# subjects_dict['003'] = question_3_003
+subjects_dict['003'] = question_3_003
 # subjects_dict['004'] = question_3_004
 # subjects_dict['005'] = question_3_005
 # subjects_dict['007'] = question_3_007
-subjects_dict['008'] = question_3_008
+# subjects_dict['008'] = question_3_008
 # subjects_dict['009'] = question_3_009
 # subjects_dict['1000'] = question_3_1000
 

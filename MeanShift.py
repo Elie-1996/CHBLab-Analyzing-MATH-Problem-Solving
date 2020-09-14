@@ -94,16 +94,35 @@ from itertools import cycle
 plt.figure(1)
 plt.clf()
 
+hist = []
+hist_color = []
 image_path = os.path.join('Heatmap', 'BackgroundImage.jpg')
 img = Image.open(image_path)
 img = ImageOps.flip(img)
 colors = cycle('bgrcmykbgrcmykbgrcmykbgrcmyk')
 for k, col in zip(range(n_clusters_), colors):
     my_members = [i for i, x in enumerate(labels) if x == k]
+    hist.append(len(my_members))
+    hist_color.append(col)
     cluster_center = cluster_centers[k]
     plt.plot(X[my_members, 0], X[my_members, 1], col + '.')
     plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
 
 plt.title('Estimated number of clusters: %d' % n_clusters_)
 plt.imshow(img, origin='lower')
+
+
+# turn to probablistic histogram
+hist = [x/sum(hist) for x in hist]
+
+# draw histogram
+plt.figure(2)
+plt.title("Cluster Histogram")
+plt.xlabel("Cluster")
+plt.ylabel("Count")
+
+y_pos = np.arange(len(hist_color))
+plt.bar(y_pos, hist, color=hist_color)
+plt.xticks(y_pos, hist_color)
 plt.show()
+

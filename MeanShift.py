@@ -16,16 +16,15 @@ question_3_006 = None
 question_3_007 = (468, 620)
 question_3_008 = (720, 930)
 question_3_009 = (584, 714)
-question_3_010 = (431, 527)
-question_3_011 = (385, 480)
+question_3_1000 = (316, 414)
 
 subjects_dict['003_fixations'] = question_3_003
 subjects_dict['004_fixations'] = question_3_004
 subjects_dict['005_fixations'] = question_3_005
 subjects_dict['007_fixations'] = question_3_007
 subjects_dict['008_fixations'] = question_3_008
-subjects_dict['009_fixations'] = question_3_008
-subjects_dict['1000_fixations'] = question_3_008
+subjects_dict['009_fixations'] = question_3_009
+subjects_dict['1000_fixations'] = question_3_1000
 
 data = []
 
@@ -74,7 +73,7 @@ for file in os.listdir(input_directory):
             # duration = int((df['start_timestamp'].iloc[i]-df['start_timestamp'].iloc[i-1])*1000)
             for j in range(duration):
                 data.append([df['norm_pos_x'].iloc[i]*WIDTH, (df['norm_pos_y'].iloc[i])*HEIGHT])
-    xy_points_amount_per_subject.append(len(data) - xy_points_amount_per_subject[-1])
+    xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
 xy_points_amount_per_subject = xy_points_amount_per_subject[1:]
 
 X = np.array(data)
@@ -92,9 +91,11 @@ n_clusters_ = len(labels_unique)
 print("Finish clustering")
 
 # build 'n_clusters_'x'n_clusters_' switch_matrix
-switch_mat = np.zeros([n_clusters_, n_clusters_])
+switch_mat_list = [np.zeros([n_clusters_, n_clusters_]) for _ in xy_points_amount_per_subject]
+print(xy_points_amount_per_subject)
+
 start = 0
-for a in xy_points_amount_per_subject:
+for subject_idx, a in enumerate(xy_points_amount_per_subject):
     end = start + a
     subject_data = X[start:end, :]
     last_label = -1
@@ -103,19 +104,20 @@ for a in xy_points_amount_per_subject:
             if idx >= subject_data.shape[0]:
                 break
             x, y = subject_data[idx, 0], subject_data[idx, 1]
-            switch_mat[last_label, label] += 1.0
+            switch_mat_list[subject_idx][last_label, label] += 1.0
         last_label = label
 
     start = end
 
 from matrixHeatMap import heatmapMatrix, annotate_heatmapMatrix
-for i in range(switch_mat.shape[0]):
-        switch_mat[i][i] = 0
-plt.figure(1)
+for subject_idx in range(len(xy_points_amount_per_subject)):
+    for i in range(switch_mat_list[subject_idx].shape[0]):
+            switch_mat_list[subject_idx][i][i] = 0
+    plt.figure(subject_idx+3)
 
-im, cbar = heatmapMatrix(switch_mat, np.arange(n_clusters_), np.arange(n_clusters_),
-                   cmap="YlGn", cbarlabel="Frequency")
-texts = annotate_heatmapMatrix(im)
+    im, cbar = heatmapMatrix(switch_mat_list[subject_idx], np.arange(n_clusters_), np.arange(n_clusters_),
+                       cmap="YlGn", cbarlabel="Frequency")
+    texts = annotate_heatmapMatrix(im)
 
 
 # Plot result
@@ -123,7 +125,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from itertools import cycle
 
-plt.figure(2)
+plt.figure(1)
 plt.clf()
 
 hist = []
@@ -152,7 +154,7 @@ plt.imshow(img, origin='lower')
 hist = [x/sum(hist) for x in hist]
 
 # draw histogram
-plt.figure(3)
+plt.figure(2)
 plt.title("Cluster Histogram")
 plt.xlabel("Cluster")
 plt.ylabel("Count")

@@ -85,7 +85,7 @@ You have analysis for accuracy for 3 subjects.
   
 ############################# General Notes ###########################################  
   
-Please note that the base information/data needed or assumed can be found in <Utils.py>.  
+Please note that the base information/data needed or assumed can be found in <Utils.py>  
 Explanations are provided within the file.  
   
   

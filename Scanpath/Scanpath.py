@@ -3,8 +3,15 @@ import random
 
 import cv2
 import numpy as np
-import _get_data_functions as get
 import pandas as pd
+from Utils import background_images, input_directory, subjects_dict
+
+
+SHOULD_SAVE_GIF, NUMBER_OF_FRAMES_TO_SAVE = False, 200
+QUESTION_IDX = 2
+SUBJECT_KEY = '003_fixations'  # take the key from subjects_dict (imported above :) )
+HORIZONTAL_BINS, VERTICAL_BINS = 9, 9  # Placing -1 on either HORIZONTAL or VERTICAL bins will give you exact
+                                       # coordinates (no bins)
 
 
 def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, plotMaxDim=1024):
@@ -20,8 +27,8 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
         the additional argument plotMaxDim=500 to set, for example, the maximum
         dimension to 500. By default, images are not resized.'''
     ## Loading Data
-    img_path = os.path.join('.', 'Heatmap', 'BackgroundImage.jpg')
-    subject_path = os.path.join('.', 'Subjects', 'data', '003_fixations.csv')
+    img_path = os.path.join('..', 'Heatmap', background_images[QUESTION_IDX])
+    subject_path = os.path.join('..', input_directory, SUBJECT_KEY + ".csv")
     img = cv2.imread(img_path)
     height, width, layers = img.shape
     size = (width, height)
@@ -29,9 +36,6 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
 
     ## Init vars
     scanpath = []
-    subjects_dict = {}
-    question_3_003 = (493, 613)
-    subjects_dict['003'] = question_3_003
 
     ## Preprocessing
     normalize_time = df['start_timestamp'].iloc[0]
@@ -41,18 +45,24 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
     df['norm_pos_y'] = df[df['norm_pos_y'] >= 0]['norm_pos_y']
     df['norm_pos_y'] = df[df['norm_pos_y'] <= 1]['norm_pos_y']
 
-    df['norm_pos_x'] = pd.cut(df['norm_pos_x'], 9)
-    df['norm_pos_y'] = pd.cut(df['norm_pos_y'], 9)
-    current_subject = subjects_dict['003']
+    should_draw_bins = HORIZONTAL_BINS >= 1 and VERTICAL_BINS >= 1
+    if should_draw_bins:
+        df['norm_pos_x'] = pd.cut(df['norm_pos_x'], HORIZONTAL_BINS)
+        df['norm_pos_y'] = pd.cut(df['norm_pos_y'], VERTICAL_BINS)
+
+    subject_times = subjects_dict[SUBJECT_KEY][QUESTION_IDX]
     num_rows = len(df)
 
     print("Preprocess data")
     idx = 0
     while True:
-        if idx >= num_rows or df['start_timestamp'].iloc[idx] > current_subject[1]:
+        if idx >= num_rows or df['start_timestamp'].iloc[idx] > subject_times[1]:
             break
-        if df['on_surf'].iloc[idx] and current_subject[0] <= df['start_timestamp'].iloc[idx]:
-            scanpath.append([df['norm_pos_x'].iloc[idx].mid * size[0], (1 - df['norm_pos_y'].iloc[idx].mid) * size[1],
+        if df['on_surf'].iloc[idx] and subject_times[0] <= df['start_timestamp'].iloc[idx]:
+            x, y = df['norm_pos_x'].iloc[idx], df['norm_pos_y'].iloc[idx]
+            if should_draw_bins:
+                x, y = x.mid, y.mid
+            scanpath.append([x * size[0], (1 - y) * size[1],
                              df['start_timestamp'].iloc[idx],
                              df['start_timestamp'].iloc[idx + 1] - df['start_timestamp'].iloc[idx]])
         idx += 1
@@ -131,8 +141,13 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
             toPlot[i] = cv2.resize(toPlot[i], (w, h), interpolation=cv2.INTER_CUBIC)
 
     print("Now its imshow")
+    import imageio
+    if SHOULD_SAVE_GIF:
+        imageio.mimsave('./scanpath.gif', toPlot[:NUMBER_OF_FRAMES_TO_SAVE])
+
     for i in range(len(toPlot)):
-        cv2.imshow('Scanpath of ' + '003' + ' watching ' + 'Question 3',
+
+        cv2.imshow('Scanpath of ' + SUBJECT_KEY.split('_')[0] + ' watching ' + str(QUESTION_IDX+1),
                    toPlot[i])
         if i == 0:
             milliseconds = 1

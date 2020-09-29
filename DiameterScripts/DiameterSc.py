@@ -6,10 +6,17 @@ import pandas as pd
 import os
 from Utils import input_blinks_directory, input_pupil_directory, subjects_dict
 
+
+df_interpolation_possibilities = ['cubic', 'linear', 'time', 'index', 'values', 'nearest', 'zero', 'slinear', 'quadratic', 'barycentric', 'krogh', 'polynomial', 'spline', 'piecewise_polynomial', 'from_derivatives', 'pchip', 'akima']
+
 ############################################################################
 BASELINE = 0, 10
-SUBJECT = "003"
-QUESTION_IDX = 2
+SUBJECT = "003"  # which subject to preprocess
+QUESTION_IDX = 2  # which question to take (this is index and not value! which means IDX 0 is question 1)
+NEIGHBOR_WINDOW_SIZE = 3  # This is a 3x3 window
+HAMPEL_SIGMA = 3
+HAMPEL_WINDOW_SIZE = 12
+DF_INTERPOLATION = df_interpolation_possibilities[0]
 
 
 def pupil_preprocessing():
@@ -38,15 +45,15 @@ def pupil_preprocessing():
     pd.options.mode.chained_assignment = old
 
     # interpolate None rows
-    pupil_df['Diameter'] = pupil_df['Diameter'].interpolate(method='cubic')
+    pupil_df['Diameter'] = pupil_df['Diameter'].interpolate(method=DF_INTERPOLATION)
 
     # 2. using hample filter for detection of outliers and interpolate them using median value of neighbors
     Diameter = pupil_df['Diameter'].to_numpy()
-    new_series, detected_outliers = hampel_filter_outliers(Diameter, 12)
+    new_series, detected_outliers = hampel_filter_outliers(Diameter, HAMPEL_WINDOW_SIZE, HAMPEL_SIGMA)
     pupil_df['Diameter'] = new_series
 
     # 3. gaussian filter on data
-    pupil_df['Diameter'] = pupil_df['Diameter'].iloc[3:].rolling(window=3, win_type='gaussian').mean(std=100)
+    pupil_df['Diameter'] = pupil_df['Diameter'].iloc[3:].rolling(window=NEIGHBOR_WINDOW_SIZE, win_type='gaussian').mean(std=100)
     smooth_mean = pupil_df['Diameter'].mean()
     pupil_df = pupil_df.fillna(value={'Diameter': smooth_mean})
 

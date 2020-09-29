@@ -76,6 +76,19 @@ In order to choose run (2) - simple choose non-positive values for HORIZONTAL_BI
   
 There are more parameters that are self-explanatory within the file.  
   
+
+############################# Diameter Information ####################################
+In <DiameterScripts/DiameterSc.py>:  
+We produce diameter data.  
+In blue: Raw Data.  
+In Orange: Cleaned data.  
+  
+We clean data (orange in image) by filtering out all timestamps which blinks were recorded, and then performing bicubic interpolation for increased smoothed,  
+we then use hampel filter to detect outliers (we filter out the outliers) and then interpolate them using median value of neighbors (gaussian filter - this can be changed)  
+Here is an example on one of our subjects:  
+<img src="github_examples/Diameter_Percentages.png"/>  
+  
+There are paramters that are self-explanatory in the file.  
   
 ############################# Calibration Analysis ####################################  
   

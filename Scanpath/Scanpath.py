@@ -4,7 +4,7 @@ import random
 import cv2
 import numpy as np
 import pandas as pd
-from Utils import background_images, input_directory, subjects_dict
+from Utils import background_images, input_fixations_directory, subjects_dict
 
 
 SHOULD_SAVE_GIF, NUMBER_OF_FRAMES_TO_SAVE = False, 200
@@ -28,7 +28,7 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
         dimension to 500. By default, images are not resized.'''
     ## Loading Data
     img_path = os.path.join('..', 'Heatmap', background_images[QUESTION_IDX])
-    subject_path = os.path.join('..', input_directory, SUBJECT_KEY + ".csv")
+    subject_path = os.path.join('..', input_fixations_directory, SUBJECT_KEY + ".csv")
     img = cv2.imread(img_path)
     height, width, layers = img.shape
     size = (width, height)

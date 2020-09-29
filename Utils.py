@@ -3,9 +3,11 @@ import os
 from Visualization import AOI
 from DataLib.GetData import Data
 
-input_directory = os.path.join('Subjects', 'data')  # CSV files
+input_fixations_directory = os.path.join('Subjects', 'fixations')  # CSV files
+input_blinks_directory = os.path.join('Subjects', 'blinks')  # CSV files
+input_pupil_directory = os.path.join('Subjects', 'pupil')  # CSV files
 background_images = [None, 'Question2.jpg', 'Question3.jpg', None]
-WIDTHS =  [None, 2046, 1810, None]  # The width of image for each question (here 2046 width for Question 2)
+WIDTHS = [None, 2046, 1810, None]  # The width of image for each question (here 2046 width for Question 2)
 HEIGHTS = [None, 1155, 1014, None]  # The height of image for each question (here 1014 width for Question 3)
 subjects_dict = {
     # 'None' value means we skip the analysis of that question, and tuple (start time, end time) means we partake
@@ -13,7 +15,8 @@ subjects_dict = {
     # For example: given this data: '000_fixations': [None, (12, 43), (50, 90), None]
     # then we will skip the first question, include seconds 12 through 43 in the second
     # question, include seconds 50 through 90 in the third question and skip the fourth question
-    # Note: If you would like to exclude a subject entirely - simply fill them with 'None' values, example to exclude subject 9:
+    # Note: If you would like to exclude a subject entirely -
+    # simply fill them with 'None' values, example to exclude subject 9:
     # '009_fixations': [None, None, None, None]
     '002_fixations':  [None, None, None, None],
     '003_fixations':  [None, (368, 480), (493, 613), None],

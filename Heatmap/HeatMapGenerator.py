@@ -5,7 +5,7 @@ from heatmappy import Heatmapper
 from heatmappy.video import VideoHeatmapper
 import pandas as pd
 import cv2
-from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_directory
+from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
 
 QUESTION_IDX = 2
@@ -25,7 +25,7 @@ def produce_interval_heatmap():
         img = Image.open(filename)
         heatmapper = Heatmapper()
         img_list = []
-        input_points = os.path.join('..', input_directory, subject + '.csv')
+        input_points = os.path.join('..', input_fixations_directory, subject + '.csv')
         current_subject_times = subjects_dict[subject]
         current_subject_time = current_subject_times[QUESTION_IDX]
         if current_subject_time is None:

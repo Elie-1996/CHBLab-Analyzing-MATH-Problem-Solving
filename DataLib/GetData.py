@@ -1,8 +1,7 @@
 from pathlib import Path
-from warnings import warn
 import pandas as pd
 import msgpack
-from . import Preprocessing
+# from DiameterScripts import DiameterSc
 
 
 # Before relying on this class whatsoever, it is absolutely necessary to call DataLib.set_data or, preferably by calling
@@ -209,8 +208,7 @@ class Data:
 
     @staticmethod
     def preprocess():
-        Preprocessing.filter_out_exceeding_gazes()
-        Preprocessing.pupil_preprocessing()
+        DiameterSc.pupil_preprocessing()
 
 
 def load_pupil_data(pldata_dir):

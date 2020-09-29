@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageOps
 import numpy as np
-from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_directory
+from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
 CLUSTER_RADIUS = [-1, 200, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
@@ -49,8 +49,8 @@ for question_idx in range(4):
     HEIGHT = HEIGHTS[question_idx]
     xy_points_amount_per_subject = [0]
     subjects = []
-    for file in os.listdir(input_directory):
-        file_directory = os.path.join(input_directory, file)
+    for file in os.listdir(input_fixations_directory):
+        file_directory = os.path.join(input_fixations_directory, file)
         df = pd.read_csv(file_directory)
         print(file)
         current_subject_times = subjects_dict[file[:-4]]  # list of questions timelines

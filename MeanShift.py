@@ -7,6 +7,7 @@ from PIL import ImageOps
 import numpy as np
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
+TOTAL_OTHER_FIGURES = 5
 CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 
@@ -49,6 +50,7 @@ for question_idx in range(4):
     HEIGHT = HEIGHTS[question_idx]
     xy_points_amount_per_subject = [0]
     subjects = []
+    current_question_time_stamps = []
     for file in os.listdir(input_fixations_directory):
         file_directory = os.path.join(input_fixations_directory, file)
         df = pd.read_csv(file_directory)
@@ -57,6 +59,7 @@ for question_idx in range(4):
         current_subject_times = current_subject_times[question_idx]  # tuple of (start, end) timeline per question_idx
         if current_subject_times is None:
             continue
+
         for i, point in enumerate(df.iterrows()):
             x, y = df['norm_pos_x'].iloc[i]*WIDTH, df['norm_pos_y'].iloc[i]*HEIGHT
             if should_exclude_point(x, y, question_idx):
@@ -67,6 +70,7 @@ for question_idx in range(4):
                 # duration = int((df['start_timestamp'].iloc[i]-df['start_timestamp'].iloc[i-1])*1000)
                 for j in range(duration):
                     data.append([df['norm_pos_x'].iloc[i]*WIDTH, (df['norm_pos_y'].iloc[i])*HEIGHT])
+                    current_question_time_stamps.append(df['start_timestamp'])
         xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
         subjects.append(file.split('_')[0])
     xy_points_amount_per_subject = xy_points_amount_per_subject[1:]
@@ -75,6 +79,7 @@ for question_idx in range(4):
         print("Skipping - No data provided for current question")
         continue
     X = np.array(data)
+    T = np.array(current_question_time_stamps)
     print(X.shape)
     bandwidth = CLUSTER_RADIUS[question_idx] if CLUSTER_RADIUS[question_idx] > 0 else estimate_bandwidth(X, quantile=0.2, n_samples=5000)
     print("radius/bandwidth=" + str(bandwidth))
@@ -111,11 +116,13 @@ for question_idx in range(4):
 
         start = end
 
+    total_jumps_within_each_area = [0 for i in range(switch_mat_list[0].shape[0])]
     from matrixHeatMap import heatmapMatrix, annotate_heatmapMatrix
     for subject_idx in range(len(xy_points_amount_per_subject)):
         for i in range(switch_mat_list[subject_idx].shape[0]):
-                switch_mat_list[subject_idx][i][i] = 0
-        plt.figure(subject_idx+3)
+            total_jumps_within_each_area[i] += (switch_mat_list[subject_idx][i][i])
+            switch_mat_list[subject_idx][i][i] = 0
+        plt.figure(subject_idx+TOTAL_OTHER_FIGURES)
 
         im, cbar = heatmapMatrix(switch_mat_list[subject_idx], np.arange(n_clusters_), np.arange(n_clusters_),
                            cmap="YlGn", cbarlabel="Frequency")
@@ -136,11 +143,14 @@ for question_idx in range(4):
     image_path = os.path.join('Heatmap', background_images[question_idx])
     img = Image.open(image_path)
     img = ImageOps.flip(img)
-    legend=[]
+    legend = []
     # colors = cycle('bgrcmykwbgrcmykbgrcmykbgrcmyk')
     colors = cycle(['#CD6155', '#AF7AC5', '#2980B9', '#16A085', '#2ECC71', '#F1C40F', '#F39C12', '#ECF0F1', '#BDC3C7', '#95A5A6', '#707B7C', '#17202A'])
+    # time_per_cluster = []
     for k, col in zip(range(n_clusters_), colors):
         my_members = [i for i, x in enumerate(labels) if x == k]
+        # time_for_each_visit_in_current_cluster = get_every_visit_time(my_members, T)
+        # time_per_cluster.append(time_for_each_visit_in_current_cluster)
         hist.append(len(my_members))
         hist_color.append(col)
         cluster_center = cluster_centers[k]
@@ -166,6 +176,16 @@ for question_idx in range(4):
     y_pos = np.arange(len(hist_color))
     plt.bar(y_pos, hist, color=hist_color)
     plt.xticks(y_pos, np.arange(len(hist_color)))
+
+    # draw jumps within each area histogram:
+    plt.figure(3)
+    plt.title(f"Question {question_idx + 1} - Jumps per area Histogram")
+    plt.xlabel("Area/Cluster")
+    plt.ylabel("Average number of jumps")
+
+    y_pos = np.arange(len(hist_color))
+    average_jumps_within_each_area = [item/n_clusters_ for item in total_jumps_within_each_area]
+    plt.bar(y_pos, average_jumps_within_each_area, color=hist_color)
+    plt.xticks(y_pos, np.arange(len(hist_color)))
+
     plt.show()
-
-

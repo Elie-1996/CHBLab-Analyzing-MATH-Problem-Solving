@@ -7,7 +7,7 @@ from PIL import ImageOps
 import numpy as np
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
-CLUSTER_RADIUS = [-1, 200, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
+CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 
 class rect:
@@ -137,13 +137,14 @@ for question_idx in range(4):
     img = Image.open(image_path)
     img = ImageOps.flip(img)
     legend=[]
-    colors = cycle('bgrcmykbgrcmykbgrcmykbgrcmyk')
+    # colors = cycle('bgrcmykwbgrcmykbgrcmykbgrcmyk')
+    colors = cycle(['#CD6155', '#AF7AC5', '#2980B9', '#16A085', '#2ECC71', '#F1C40F', '#F39C12', '#ECF0F1', '#BDC3C7', '#95A5A6', '#707B7C', '#17202A'])
     for k, col in zip(range(n_clusters_), colors):
         my_members = [i for i, x in enumerate(labels) if x == k]
         hist.append(len(my_members))
         hist_color.append(col)
         cluster_center = cluster_centers[k]
-        plt.plot(X[my_members, 0], X[my_members, 1], col + '.')
+        plt.scatter(X[my_members, 0], X[my_members, 1], c=col, marker='.')
         patch = mpatches.Patch(color=col, label=k)
         legend.append(patch)
         plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
@@ -164,7 +165,7 @@ for question_idx in range(4):
 
     y_pos = np.arange(len(hist_color))
     plt.bar(y_pos, hist, color=hist_color)
-    plt.xticks(y_pos, hist_color)
+    plt.xticks(y_pos, np.arange(len(hist_color)))
     plt.show()
 
 

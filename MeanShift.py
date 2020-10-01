@@ -7,7 +7,8 @@ from PIL import ImageOps
 import numpy as np
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
-TOTAL_OTHER_FIGURES = 5
+figure_counter = 0  # keep 0 please
+
 CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 
@@ -23,6 +24,7 @@ class rect:
         return self.x1 <= _x <= self.x2 and self.y2 <= _y <= self.y1
 
 
+# type in all the exculsions you would like
 rectangles_to_exclude_question_1 = []
 rectangles_to_exclude_question_2 = []
 rectangles_to_exclude_question_3 = [rect(0.0, HEIGHTS[2]/2.0, WIDTHS[2], 0.0)]
@@ -34,15 +36,28 @@ rectangles_to_exclude = [
     rectangles_to_exclude_question_4
 ]
 
+# text colors - keep unchanged please:
+CRED = '\033[91m'
+CGREEN = '\33[32m'
+CEND = '\033[0m'
+
 
 def should_exclude_point(_x, _y, question_idx):
     for r in rectangles_to_exclude[question_idx]:
-        if r.is_point_inside(x, y):
+        if r.is_point_inside(_x, _y):
             return True
     return False
 
 
-for question_idx in range(4):
+def choose_bandwidth(X, question_idx):
+    bandwidth = CLUSTER_RADIUS[question_idx] if CLUSTER_RADIUS[question_idx] > 0 \
+        else estimate_bandwidth(X, quantile=0.2, n_samples=5000)
+    print("radius/bandwidth=" + str(bandwidth))
+
+    return bandwidth
+
+
+def get_question_data(question_idx):
     print("####################################")
     print(f"Question {question_idx + 1}:")
     data = []
@@ -56,51 +71,32 @@ for question_idx in range(4):
         df = pd.read_csv(file_directory)
         print(file)
         current_subject_times = subjects_dict[file[:-4]]  # list of questions timelines
-        current_subject_times = current_subject_times[question_idx]  # tuple of (start, end) timeline per question_idx
+        current_subject_times = current_subject_times[
+            question_idx]  # tuple of (start, end) timeline per question_idx
         if current_subject_times is None:
             continue
 
         for i, point in enumerate(df.iterrows()):
-            x, y = df['norm_pos_x'].iloc[i]*WIDTH, df['norm_pos_y'].iloc[i]*HEIGHT
+            x, y = df['norm_pos_x'].iloc[i] * WIDTH, df['norm_pos_y'].iloc[i] * HEIGHT
             if should_exclude_point(x, y, question_idx):
                 continue
-            if df['on_surf'].iloc[i] and df['start_timestamp'].iloc[0] + current_subject_times[0] <= df['start_timestamp'].iloc[i] <= \
+            if df['on_surf'].iloc[i] and df['start_timestamp'].iloc[0] + current_subject_times[0] <= \
+                    df['start_timestamp'].iloc[i] <= \
                     df['start_timestamp'].iloc[0] + current_subject_times[1]:
-                duration = int(df['duration'].iloc[i]/10)
+                duration = int(df['duration'].iloc[i] / 10)
                 # duration = int((df['start_timestamp'].iloc[i]-df['start_timestamp'].iloc[i-1])*1000)
                 for j in range(duration):
-                    data.append([df['norm_pos_x'].iloc[i]*WIDTH, (df['norm_pos_y'].iloc[i])*HEIGHT])
+                    data.append([df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT])
                     current_question_time_stamps.append(df['start_timestamp'])
         xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
         subjects.append(file.split('_')[0])
     xy_points_amount_per_subject = xy_points_amount_per_subject[1:]
 
-    if not data:  # if empty
-        print("Skipping - No data provided for current question")
-        continue
-    X = np.array(data)
-    T = np.array(current_question_time_stamps)
-    print(X.shape)
-    bandwidth = CLUSTER_RADIUS[question_idx] if CLUSTER_RADIUS[question_idx] > 0 else estimate_bandwidth(X, quantile=0.2, n_samples=5000)
-    print("radius/bandwidth=" + str(bandwidth))
+    return data, xy_points_amount_per_subject, subjects
 
-    clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(X)
-    cluster_centers = clustering.cluster_centers_
-    labels = clustering.labels_
 
-    labels_unique = np.unique(labels)
-    n_clusters_ = len(labels_unique)
-
-    CRED = '\033[91m'
-    CGREEN = '\33[32m'
-    CEND = '\033[0m'
-    print(CGREEN + "Finish clustering" + CEND)
-    print(CRED + "Please Close all open windows to continue to next question." + CEND)
-
-    # build 'n_clusters_'x'n_clusters_' switch_matrix
+def build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, X, labels, n_clusters_):
     switch_mat_list = [np.zeros([n_clusters_, n_clusters_]) for _ in xy_points_amount_per_subject]
-    print(xy_points_amount_per_subject)
-
     start = 0
     for subject_idx, a in enumerate(xy_points_amount_per_subject):
         end = start + a
@@ -116,76 +112,122 @@ for question_idx in range(4):
 
         start = end
 
-    total_jumps_within_each_area = [0 for i in range(switch_mat_list[0].shape[0])]
+    return switch_mat_list
+
+
+def build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects):
+    global figure_counter
     from matrixHeatMap import heatmapMatrix, annotate_heatmapMatrix
+    total_jumps_within_each_area = [0 for _ in range(switch_mat_list[0].shape[0])]
     for subject_idx in range(len(xy_points_amount_per_subject)):
         for i in range(switch_mat_list[subject_idx].shape[0]):
             total_jumps_within_each_area[i] += (switch_mat_list[subject_idx][i][i])
             switch_mat_list[subject_idx][i][i] = 0
-        plt.figure(subject_idx+TOTAL_OTHER_FIGURES)
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
 
         im, cbar = heatmapMatrix(switch_mat_list[subject_idx], np.arange(n_clusters_), np.arange(n_clusters_),
-                           cmap="YlGn", cbarlabel="Frequency")
+                                 cmap="YlGn", cbarlabel="Frequency")
         plt.title(f"Question {question_idx + 1} - Subject {subjects[subject_idx]}")
         texts = annotate_heatmapMatrix(im)
 
-
-    # Plot result
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
-    from itertools import cycle
-
-    plt.figure(1)
-    plt.clf()
-
-    hist = []
-    hist_color = []
-    image_path = os.path.join('Heatmap', background_images[question_idx])
-    img = Image.open(image_path)
-    img = ImageOps.flip(img)
-    legend = []
-    # colors = cycle('bgrcmykwbgrcmykbgrcmykbgrcmyk')
-    colors = cycle(['#CD6155', '#AF7AC5', '#2980B9', '#16A085', '#2ECC71', '#F1C40F', '#F39C12', '#ECF0F1', '#BDC3C7', '#95A5A6', '#707B7C', '#17202A'])
-    # time_per_cluster = []
-    for k, col in zip(range(n_clusters_), colors):
-        my_members = [i for i, x in enumerate(labels) if x == k]
-        # time_for_each_visit_in_current_cluster = get_every_visit_time(my_members, T)
-        # time_per_cluster.append(time_for_each_visit_in_current_cluster)
-        hist.append(len(my_members))
-        hist_color.append(col)
-        cluster_center = cluster_centers[k]
-        plt.scatter(X[my_members, 0], X[my_members, 1], c=col, marker='.')
-        patch = mpatches.Patch(color=col, label=k)
-        legend.append(patch)
-        plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
-
-    plt.legend(handles=legend)
-    plt.title(f'Question {question_idx + 1} - Estimated number of clusters: {n_clusters_}')
-    plt.imshow(img, origin='lower')
+    return switch_mat_list, total_jumps_within_each_area
 
 
-    # turn to probablistic histogram
-    hist = [x/sum(hist) for x in hist]
+def run_analysis():
+    global figure_counter
+    for question_idx in range(4):
+        figure_counter = 0  # keep 0 please
 
-    # draw histogram
-    plt.figure(2)
-    plt.title(f"Question {question_idx + 1} - Cluster Histogram")
-    plt.xlabel("Cluster")
-    plt.ylabel("Count")
+        # extract question data
+        data, xy_points_amount_per_subject, subjects = get_question_data(question_idx)
+        if not data:  # if empty
+            print(CRED + "Skipping - No data provided for current question" + CEND)
+            continue
+        X = np.array(data)
+        print(X.shape)
 
-    y_pos = np.arange(len(hist_color))
-    plt.bar(y_pos, hist, color=hist_color)
-    plt.xticks(y_pos, np.arange(len(hist_color)))
+        # choose bandwidth
+        bandwidth = choose_bandwidth(X, question_idx)
 
-    # draw jumps within each area histogram:
-    plt.figure(3)
-    plt.title(f"Question {question_idx + 1} - Jumps per area Histogram")
-    plt.xlabel("Area/Cluster")
-    plt.ylabel("Average number of jumps")
+        # create clusters and extract cluster data
+        clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(X)
+        cluster_centers = clustering.cluster_centers_
+        labels = clustering.labels_
+        labels_unique = np.unique(labels)
+        n_clusters_ = len(labels_unique)
+        print(CGREEN + "Finish clustering" + CEND)
 
-    y_pos = np.arange(len(hist_color))
-    average_jumps_within_each_area = [item/n_clusters_ for item in total_jumps_within_each_area]
-    plt.bar(y_pos, average_jumps_within_each_area, color=hist_color)
-    plt.xticks(y_pos, np.arange(len(hist_color)))
+        # build 'n_clusters_'x'n_clusters_' switch_matrix
+        print(xy_points_amount_per_subject)
 
-    plt.show()
+        switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, X, labels, n_clusters_)
+        switch_mat_list, total_jumps_within_each_area = build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects)
+
+        # Plot result
+        import matplotlib.patches as mpatches
+        from itertools import cycle
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
+        plt.clf()
+
+        hist = []
+        hist_color = []
+        image_path = os.path.join('Heatmap', background_images[question_idx])
+        img = Image.open(image_path)
+        img = ImageOps.flip(img)
+        legend = []
+        # colors = cycle('bgrcmykwbgrcmykbgrcmykbgrcmyk')
+        colors = cycle(
+            ['#CD6155', '#AF7AC5', '#2980B9', '#16A085', '#2ECC71', '#F1C40F', '#F39C12', '#ECF0F1', '#BDC3C7',
+             '#95A5A6', '#707B7C', '#17202A'])
+        # time_per_cluster = []
+        for k, col in zip(range(n_clusters_), colors):
+            my_members = [i for i, x in enumerate(labels) if x == k]
+            # time_for_each_visit_in_current_cluster = get_every_visit_time(my_members, T)
+            # time_per_cluster.append(time_for_each_visit_in_current_cluster)
+            hist.append(len(my_members))
+            hist_color.append(col)
+            cluster_center = cluster_centers[k]
+            plt.scatter(X[my_members, 0], X[my_members, 1], c=col, marker='.')
+            patch = mpatches.Patch(color=col, label=k)
+            legend.append(patch)
+            plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
+
+        plt.legend(handles=legend)
+        plt.title(f'Question {question_idx + 1} - Estimated number of clusters: {n_clusters_}')
+        plt.imshow(img, origin='lower')
+
+        # turn to probablistic histogram
+        hist = [x / sum(hist) for x in hist]
+
+        # draw histogram
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
+        plt.title(f"Question {question_idx + 1} - Cluster Histogram")
+        plt.xlabel("Cluster")
+        plt.ylabel("Count")
+
+        y_pos = np.arange(len(hist_color))
+        plt.bar(y_pos, hist, color=hist_color)
+        plt.xticks(y_pos, np.arange(len(hist_color)))
+
+        # draw jumps within each area histogram:
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
+        plt.title(f"Question {question_idx + 1} - Jumps per area Histogram")
+        plt.xlabel("Area/Cluster")
+        plt.ylabel("Average number of jumps")
+
+        y_pos = np.arange(len(hist_color))
+        average_jumps_within_each_area = [item / n_clusters_ for item in total_jumps_within_each_area]
+        plt.bar(y_pos, average_jumps_within_each_area, color=hist_color)
+        plt.xticks(y_pos, np.arange(len(hist_color)))
+
+        print(CRED + "Please Close all open windows to continue to next question." + CEND)
+        plt.show()
+
+
+run_analysis()
+print("####################################")
+print(CGREEN + "Analysis presentations complete." + CEND)

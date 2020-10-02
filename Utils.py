@@ -12,21 +12,21 @@ HEIGHTS = [None, 1155, 1014, None]  # The height of image for each question (her
 subjects_dict = {
     # 'None' value means we skip the analysis of that question, and tuple (start time, end time) means we partake
     # these specific times (in seconds) to include in question
-    # For example: given this data: '000_fixations': [None, (12, 43), (50, 90), None]
+    # For example: given this data: '000': [None, (12, 43), (50, 90), None]
     # then we will skip the first question, include seconds 12 through 43 in the second
     # question, include seconds 50 through 90 in the third question and skip the fourth question
     # Note: If you would like to exclude a subject entirely -
     # simply fill them with 'None' values, example to exclude subject 9:
-    # '009_fixations': [None, None, None, None]
-    '002_fixations':  [None, None, None, None],
-    '003_fixations':  [None, (368, 480), (493, 613), None],
-    '004_fixations':  [None, (251, 380), (394, 560), None],
-    '005_fixations':  [None, (385, 523), (536, 649), None],
-    '006_fixations':  [None, None, None, None],
-    '007_fixations':  [None, (361, 450), (468, 620), None],
-    '008_fixations':  [None, (560, 701), (720, 930), None],
-    '009_fixations':  [None, (460, 550), (584, 714), None],
-    '1000_fixations': [None, (203, 303), (316, 414), None]
+    # '009': [None, None, None, None]
+    '002':  [None, None, None, None],
+    '003':  [None, (368, 480), (493, 613), None],
+    '004':  [None, (251, 380), (394, 560), None],
+    '005':  [None, (385, 523), (536, 649), None],
+    '006':  [None, None, None, None],
+    '007':  [None, (361, 450), (468, 620), None],
+    '008':  [None, (560, 701), (720, 930), None],
+    '009':  [None, (460, 550), (584, 714), None],
+    '1000': [None, (203, 303), (316, 414), None]
 }
 
 

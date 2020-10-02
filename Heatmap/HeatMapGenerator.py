@@ -25,7 +25,7 @@ def produce_interval_heatmap():
         img = Image.open(filename)
         heatmapper = Heatmapper()
         img_list = []
-        input_points = os.path.join('..', input_fixations_directory, subject + '.csv')
+        input_points = os.path.join('..', input_fixations_directory, subject + '_fixations.csv')
         current_subject_times = subjects_dict[subject]
         current_subject_time = current_subject_times[QUESTION_IDX]
         if current_subject_time is None:

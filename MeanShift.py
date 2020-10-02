@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageOps
 import numpy as np
-from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
+from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory, input_pupil_directory
 
 figure_counter = 0  # keep 0 please
 
 CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 
-class rect:
+class Rect:
     def __init__(self, upper_left_x, upper_left_y, bottom_right_x, bottom_right_y):
         self.x1 = upper_left_x
         self.y1 = upper_left_y
@@ -27,7 +27,7 @@ class rect:
 # type in all the exculsions you would like
 rectangles_to_exclude_question_1 = []
 rectangles_to_exclude_question_2 = []
-rectangles_to_exclude_question_3 = [rect(0.0, HEIGHTS[2]/2.0, WIDTHS[2], 0.0)]
+rectangles_to_exclude_question_3 = [Rect(0.0, HEIGHTS[2] / 2.0, WIDTHS[2], 0.0)]
 rectangles_to_exclude_question_4 = []
 rectangles_to_exclude = [
     rectangles_to_exclude_question_1,
@@ -57,9 +57,9 @@ def choose_bandwidth(X, question_idx):
     return bandwidth
 
 
-def get_question_data(question_idx):
-    print("####################################")
-    print(f"Question {question_idx + 1}:")
+def get_question_fixation_data(question_idx):
+    print("<Reading/Processing Fixation Data>:")
+
     data = []
     WIDTH = WIDTHS[question_idx]
     HEIGHT = HEIGHTS[question_idx]
@@ -70,7 +70,7 @@ def get_question_data(question_idx):
         file_directory = os.path.join(input_fixations_directory, file)
         df = pd.read_csv(file_directory)
         print(file)
-        current_subject_times = subjects_dict[file[:-4]]  # list of questions timelines
+        current_subject_times = subjects_dict[file.split("_")[0]]  # list of questions timelines
         current_subject_times = current_subject_times[
             question_idx]  # tuple of (start, end) timeline per question_idx
         if current_subject_times is None:
@@ -84,15 +84,51 @@ def get_question_data(question_idx):
                     df['start_timestamp'].iloc[i] <= \
                     df['start_timestamp'].iloc[0] + current_subject_times[1]:
                 duration = int(df['duration'].iloc[i] / 10)
-                # duration = int((df['start_timestamp'].iloc[i]-df['start_timestamp'].iloc[i-1])*1000)
                 for j in range(duration):
-                    data.append([df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT])
+                    data.append([df['start_timestamp'].iloc[i], [df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT]])
                     current_question_time_stamps.append(df['start_timestamp'])
         xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
         subjects.append(file.split('_')[0])
     xy_points_amount_per_subject = xy_points_amount_per_subject[1:]
 
+    print("<Reading/Processing Fixation Data Complete!>")
     return data, xy_points_amount_per_subject, subjects
+
+
+def get_question_pupil_data(question_idx):
+    print("<Reading/Processing Pupil Data>:")
+
+    diameter_data = []
+    for file in os.listdir(input_pupil_directory):
+        diameter_data_current_subject = []
+        file_directory = os.path.join(input_pupil_directory, file)
+        df = pd.read_csv(file_directory)
+        print(file)
+        current_subject_times = subjects_dict[file.split("_")[0]]  # list of questions timelines
+        current_subject_times = current_subject_times[
+            question_idx]  # tuple of (start, end) timeline per question_idx
+        if current_subject_times is None:
+            continue
+        for i, point in enumerate(df.iterrows()):
+
+            # only include diameter data within the given questions' timestamp
+            if df['pupil_timestamp'].iloc[0] + current_subject_times[0] <= \
+                    df['pupil_timestamp'].iloc[i] <= \
+                    df['pupil_timestamp'].iloc[0] + current_subject_times[1]:
+                diameter_time = [df['pupil_timestamp'].iloc[i], df['diameter'].iloc[i]]
+                diameter_data_current_subject.append(diameter_time)
+        diameter_data.append(diameter_data_current_subject)
+    print("<Reading/Processing Pupil Data Complete!>")
+    return diameter_data
+
+
+def get_question_data(question_idx):
+    print("####################################")
+    print(f"Question {question_idx + 1}:")
+    data, xy_points_amount_per_subject, subjects = get_question_fixation_data(question_idx)
+    diameter_data = get_question_pupil_data(question_idx)
+
+    return data, xy_points_amount_per_subject, subjects, diameter_data
 
 
 def build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, X, labels, n_clusters_):
@@ -134,24 +170,46 @@ def build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amou
     return switch_mat_list, total_jumps_within_each_area
 
 
+def reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_):
+
+    epsilon = 0.5
+    diameters_in_all_clusters = [[] for _ in range(n_clusters_)]
+    for current_subject_diameter_data in diameter_data:
+        for t, diameter in current_subject_diameter_data:
+            # find idx in XY_TIME
+            idx = -1
+            for (i, (search_time, (x, y))) in enumerate(XY_TIME):
+                if -epsilon + t <= search_time <= epsilon + t:
+                    idx = i
+                    break
+            if idx == -1:
+                continue
+            label = labels[idx]
+            diameters_in_all_clusters[label].append(diameter)
+
+    return diameters_in_all_clusters
+
+
 def run_analysis():
     global figure_counter
     for question_idx in range(4):
         figure_counter = 0  # keep 0 please
 
         # extract question data
-        data, xy_points_amount_per_subject, subjects = get_question_data(question_idx)
+        data, xy_points_amount_per_subject, subjects, diameter_data = get_question_data(question_idx)
         if not data:  # if empty
             print(CRED + "Skipping - No data provided for current question" + CEND)
             continue
-        X = np.array(data)
-        print(X.shape)
+        XY_TIME = np.array(data)
+        print(XY_TIME.shape)
+        XY_ONLY = np.array([[x,y] for t,(x,y) in XY_TIME])
+        print(XY_ONLY.shape)
 
         # choose bandwidth
-        bandwidth = choose_bandwidth(X, question_idx)
+        bandwidth = choose_bandwidth(XY_ONLY, question_idx)
 
         # create clusters and extract cluster data
-        clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(X)
+        clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(XY_ONLY)
         cluster_centers = clustering.cluster_centers_
         labels = clustering.labels_
         labels_unique = np.unique(labels)
@@ -161,7 +219,8 @@ def run_analysis():
         # build 'n_clusters_'x'n_clusters_' switch_matrix
         print(xy_points_amount_per_subject)
 
-        switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, X, labels, n_clusters_)
+        diameters_in_all_clusters = reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_)
+        switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, XY_ONLY, labels, n_clusters_)
         switch_mat_list, total_jumps_within_each_area = build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects)
 
         # Plot result
@@ -189,7 +248,7 @@ def run_analysis():
             hist.append(len(my_members))
             hist_color.append(col)
             cluster_center = cluster_centers[k]
-            plt.scatter(X[my_members, 0], X[my_members, 1], c=col, marker='.')
+            plt.scatter(XY_ONLY[my_members, 0], XY_ONLY[my_members, 1], c=col, marker='.')
             patch = mpatches.Patch(color=col, label=k)
             legend.append(patch)
             plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
@@ -222,6 +281,19 @@ def run_analysis():
         y_pos = np.arange(len(hist_color))
         average_jumps_within_each_area = [item / n_clusters_ for item in total_jumps_within_each_area]
         plt.bar(y_pos, average_jumps_within_each_area, color=hist_color)
+        plt.xticks(y_pos, np.arange(len(hist_color)))
+
+        # draw mean pupil histogram per cluster
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
+        plt.title(f"Question {question_idx + 1} - Mean Pupil Diameter")
+        plt.xlabel("Area/Cluster")
+        plt.ylabel("Mean Pupil Diameter")
+
+        y_pos = np.arange(len(hist_color))
+        from statistics import mean
+        average_pupil_diameter = [mean(l1) if len(l1) > 0 else 0 for l1 in diameters_in_all_clusters]
+        plt.bar(y_pos, average_pupil_diameter, color=hist_color)
         plt.xticks(y_pos, np.arange(len(hist_color)))
 
         print(CRED + "Please Close all open windows to continue to next question." + CEND)

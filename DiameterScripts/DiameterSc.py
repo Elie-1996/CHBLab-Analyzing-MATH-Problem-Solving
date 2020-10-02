@@ -23,7 +23,7 @@ def pupil_preprocessing():
     """" Prepossessing of pupil Diameter """
     pupil_df = pd.read_csv(os.path.join('..', input_pupil_directory, SUBJECT + '_pupil_positions.csv'))
     blinks_df = pd.read_csv(os.path.join('..', input_blinks_directory, SUBJECT + '_blinks.csv'))
-    start_time, end_time = subjects_dict[SUBJECT + "_fixations"][QUESTION_IDX]
+    start_time, end_time = subjects_dict[SUBJECT][QUESTION_IDX]
 
     pupil_df = pupil_df.rename(columns={'diameter': 'Diameter'}, inplace=False)
     pupil_df.pupil_timestamp -= pupil_df.pupil_timestamp.iloc[0]

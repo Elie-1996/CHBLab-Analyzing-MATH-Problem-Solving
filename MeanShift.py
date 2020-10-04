@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from sklearn.cluster import MeanShift, estimate_bandwidth
+from sklearn.neighbors import KNeighborsClassifier as KNearestNeighbors
 import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageOps
@@ -9,8 +10,8 @@ from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixat
 
 figure_counter = 0  # keep 0 please
 
+DRAW_PUPIL_MEAN_HISTOGRAM = False
 CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
-
 
 class Rect:
     def __init__(self, upper_left_x, upper_left_y, bottom_right_x, bottom_right_y):
@@ -61,6 +62,7 @@ def get_question_fixation_data(question_idx):
     print("<Reading/Processing Fixation Data>:")
 
     data = []
+    durations = {}
     WIDTH = WIDTHS[question_idx]
     HEIGHT = HEIGHTS[question_idx]
     xy_points_amount_per_subject = [0]
@@ -84,15 +86,16 @@ def get_question_fixation_data(question_idx):
                     df['start_timestamp'].iloc[i] <= \
                     df['start_timestamp'].iloc[0] + current_subject_times[1]:
                 duration = int(df['duration'].iloc[i] / 10)
+                durations[(x, y)] = df['duration'].iloc[i]
                 for j in range(duration):
                     data.append([df['start_timestamp'].iloc[i], [df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT]])
                     current_question_time_stamps.append(df['start_timestamp'])
         xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
         subjects.append(file.split('_')[0])
     xy_points_amount_per_subject = xy_points_amount_per_subject[1:]
-
+    total_duration = np.array(list(durations.values())).sum()
     print("<Reading/Processing Fixation Data Complete!>")
-    return data, xy_points_amount_per_subject, subjects
+    return data, xy_points_amount_per_subject, subjects, durations, total_duration
 
 
 def get_question_pupil_data(question_idx):
@@ -125,10 +128,10 @@ def get_question_pupil_data(question_idx):
 def get_question_data(question_idx):
     print("####################################")
     print(f"Question {question_idx + 1}:")
-    data, xy_points_amount_per_subject, subjects = get_question_fixation_data(question_idx)
+    data, xy_points_amount_per_subject, subjects, durations, total_duration = get_question_fixation_data(question_idx)
     diameter_data = get_question_pupil_data(question_idx)
 
-    return data, xy_points_amount_per_subject, subjects, diameter_data
+    return data, xy_points_amount_per_subject, subjects, diameter_data, durations, total_duration
 
 
 def build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, X, labels, n_clusters_):
@@ -190,13 +193,68 @@ def reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_):
     return diameters_in_all_clusters
 
 
+def getAngle(three_angles):
+    a, b, c = three_angles[0], three_angles[1], three_angles[2]
+    import math
+    ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+    return ang + 360 if ang < 0 else ang
+
+
+def get_fixation_totalamount_variance_angles(XY_ONLY):
+    angles = []
+    for i in range(len(XY_ONLY) - 3):
+        angles.append(getAngle(XY_ONLY[i:i+3]))
+    angles = np.array(angles)
+    angles_hist = []
+    angle_degrees_strings = []
+    degrees = 5
+    cap = 30
+    for i in range(0, cap, degrees):
+        angles_hist.append(len([angle for angle in angles if i <= angle < i + degrees]))
+        angle_degrees_strings.append(str(i) + "-" + str(i + degrees))
+    angles_hist.append(len(angles) - sum(angles_hist))
+    angle_degrees_strings.append(str(cap) + "+")
+    return len(XY_ONLY), XY_ONLY.std(), angles.mean(), angles_hist, angle_degrees_strings
+
+
+def get_pupil_mean_variance(diameter_data):
+    flat_list = [item for sublist in diameter_data for item in sublist]
+    return np.mean(flat_list), np.std(flat_list)
+
+
+def get_duration_per_cluster(XY_ONLY, durations, labels, n_clusters_):
+    durations_per_visit_per_cluster = [[] for cluster in range(n_clusters_)]
+    old_x, old_y = -1, -1
+    idx = -1
+    total_stay = 0
+    last_cluster = -1
+    for x, y in XY_ONLY:
+        idx += 1
+        if x == old_x and y == old_y:
+            continue
+        old_x, old_y = x, y
+        cluster = labels[idx]
+        if cluster != last_cluster:
+            if total_stay > 0:
+                durations_per_visit_per_cluster[last_cluster].append(total_stay)
+                total_stay = 0
+            last_cluster = cluster
+        duration = durations[(x, y)]
+        total_stay += duration
+    durations_per_visit_per_cluster[last_cluster].append(total_stay)
+
+
+    stay_duration_mean_per_cluster = [np.array(duration_list_in_cluster).mean() for duration_list_in_cluster in durations_per_visit_per_cluster]
+    return stay_duration_mean_per_cluster
+
+
 def run_analysis():
     global figure_counter
     for question_idx in range(4):
         figure_counter = 0  # keep 0 please
 
         # extract question data
-        data, xy_points_amount_per_subject, subjects, diameter_data = get_question_data(question_idx)
+        data, xy_points_amount_per_subject, subjects, diameter_data, durations, total_duration = get_question_data(question_idx)
         if not data:  # if empty
             print(CRED + "Skipping - No data provided for current question" + CEND)
             continue
@@ -212,16 +270,19 @@ def run_analysis():
         clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(XY_ONLY)
         cluster_centers = clustering.cluster_centers_
         labels = clustering.labels_
+        # KNearestNeighbors(n_neighbors=9).fit(XY_ONLY, labels)
         labels_unique = np.unique(labels)
         n_clusters_ = len(labels_unique)
         print(CGREEN + "Finish clustering" + CEND)
 
-        # build 'n_clusters_'x'n_clusters_' switch_matrix
         print(xy_points_amount_per_subject)
-
-        diameters_in_all_clusters = reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_)
+        if DRAW_PUPIL_MEAN_HISTOGRAM:
+            diameters_in_all_clusters = reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_)
         switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, XY_ONLY, labels, n_clusters_)
         switch_mat_list, total_jumps_within_each_area = build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects)
+        total_number_of_fixations, fixation_variance, angles_mean, angles_hist, angle_degrees_strings = get_fixation_totalamount_variance_angles(XY_ONLY)
+        mean_pupil_size, variance_pupil_size = get_pupil_mean_variance(diameter_data)
+        stay_duration_mean_per_cluster = get_duration_per_cluster(XY_ONLY, durations, labels, n_clusters_)
 
         # Plot result
         import matplotlib.patches as mpatches
@@ -260,7 +321,7 @@ def run_analysis():
         # turn to probablistic histogram
         hist = [x / sum(hist) for x in hist]
 
-        # draw histogram
+        # draw cluster histogram
         plt.figure(figure_counter + 1)
         figure_counter += 1
         plt.title(f"Question {question_idx + 1} - Cluster Histogram")
@@ -284,17 +345,49 @@ def run_analysis():
         plt.xticks(y_pos, np.arange(len(hist_color)))
 
         # draw mean pupil histogram per cluster
+        if DRAW_PUPIL_MEAN_HISTOGRAM:
+            print("<Drawing Pupil Mean Histogram>")
+            plt.figure(figure_counter + 1)
+            figure_counter += 1
+            plt.title(f"Question {question_idx + 1} - Mean Pupil Diameter")
+            plt.xlabel("Area/Cluster")
+            plt.ylabel("Mean Pupil Diameter")
+
+            y_pos = np.arange(len(hist_color))
+            from statistics import mean
+            average_pupil_diameter = [mean(l1) if len(l1) > 0 else 0 for l1 in diameters_in_all_clusters]
+            plt.bar(y_pos, average_pupil_diameter, color=hist_color)
+            plt.xticks(y_pos, np.arange(len(hist_color)))
+        else:
+            print("<NOT! Drawing Pupil Mean Histogram>")
+
+        # draw angles_hist
         plt.figure(figure_counter + 1)
         figure_counter += 1
-        plt.title(f"Question {question_idx + 1} - Mean Pupil Diameter")
-        plt.xlabel("Area/Cluster")
-        plt.ylabel("Mean Pupil Diameter")
+        plt.title(f"Question {question_idx + 1} - Angles Hist")
+        plt.xlabel("Degrees")
+        plt.ylabel("Amount")
+        y_pos = np.arange(len(angles_hist))
+        plt.bar(y_pos, angles_hist)
+        plt.xticks(y_pos, labels=angle_degrees_strings)
 
-        y_pos = np.arange(len(hist_color))
-        from statistics import mean
-        average_pupil_diameter = [mean(l1) if len(l1) > 0 else 0 for l1 in diameters_in_all_clusters]
-        plt.bar(y_pos, average_pupil_diameter, color=hist_color)
-        plt.xticks(y_pos, np.arange(len(hist_color)))
+        # draw stay duration mean per cluster
+        plt.figure(figure_counter + 1)
+        figure_counter += 1
+        plt.title(f"Question {question_idx + 1} - Duration mean per cluster")
+        plt.xlabel("Cluster")
+        plt.ylabel("Mean Duration Stay (m/secs)")
+        y_pos = np.arange(len(stay_duration_mean_per_cluster))
+        plt.bar(y_pos, stay_duration_mean_per_cluster, color=hist_color)
+        plt.xticks(y_pos, np.arange(len(stay_duration_mean_per_cluster)))
+
+        # printing numbers:
+        print("Length of Sequence: " + str(int(total_duration)) + " (m/secs)")
+        print("Total Number Of Fixations: " + str(total_number_of_fixations))
+        print("Fixation Variane: " + str(fixation_variance))
+        print("Mean Pupil: " + str(mean_pupil_size))
+        print("Variance Pupil: " + str(variance_pupil_size))
+        print("Angles Mean: " + str(angles_mean))
 
         print(CRED + "Please Close all open windows to continue to next question." + CEND)
         plt.show()

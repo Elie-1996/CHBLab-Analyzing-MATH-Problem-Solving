@@ -13,6 +13,7 @@ figure_counter = 0  # keep 0 please
 DRAW_PUPIL_MEAN_HISTOGRAM = False
 CREATE_CLUSTERS = False  # when true - clusters will be estimated from the data. when False, clusters will be loaded.
 SAVE_DATA = True  # When true - saves all (x, y)
+NEAREST_NEIGHBOR_K = 9
 CLUSTER_RADIUS = [-1, -1, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 class Rect:
@@ -284,7 +285,7 @@ def run_analysis():
                 df = pd.DataFrame(cluster_centers, columns=['cluster_centers_x', 'cluster_centers_y'])
                 df.to_csv('cluster_centers.csv')
         else:
-            KNN = KNearestNeighbors(n_neighbors=9)
+            KNN = KNearestNeighbors(n_neighbors=NEAREST_NEIGHBOR_K)
             df = pd.read_csv('clusters.csv')
             df_centers = pd.read_csv('cluster_centers.csv')
             loaded_data = [[df['x'].iloc[i], df['y'].iloc[i]] for i in range(len(df['x']))]

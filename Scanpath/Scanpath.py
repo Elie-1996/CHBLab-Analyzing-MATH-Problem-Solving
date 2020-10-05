@@ -9,7 +9,7 @@ from Utils import background_images, input_fixations_directory, subjects_dict
 
 SHOULD_SAVE_GIF, NUMBER_OF_FRAMES_TO_SAVE = False, 200
 QUESTION_IDX = 2
-SUBJECT_KEY = '003'  # take the key from subjects_dict (imported above :) )
+SUBJECT_KEY = '008'  # take the key from subjects_dict (imported above :) )
 HORIZONTAL_BINS, VERTICAL_BINS = 9, 9  # Placing -1 on either HORIZONTAL or VERTICAL bins will give you exact
                                        # coordinates (no bins)
 
@@ -28,7 +28,7 @@ def scanpath(animation=True, wait_time=30000, putLines=True, putNumbers=False, p
         dimension to 500. By default, images are not resized.'''
     ## Loading Data
     img_path = os.path.join('..', 'Heatmap', background_images[QUESTION_IDX])
-    subject_path = os.path.join('..', input_fixations_directory, SUBJECT_KEY + ".csv")
+    subject_path = os.path.join('..', input_fixations_directory, SUBJECT_KEY + "_fixations.csv")
     img = cv2.imread(img_path)
     height, width, layers = img.shape
     size = (width, height)

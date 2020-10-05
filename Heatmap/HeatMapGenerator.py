@@ -8,7 +8,7 @@ import cv2
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
 
-QUESTION_IDX = 2
+QUESTION_IDX = 1
 HM_INTERVAL = 1
 filename = background_images[QUESTION_IDX]
 CRED = '\33[32m'

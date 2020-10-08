@@ -6,9 +6,9 @@ from DataLib.GetData import Data
 input_fixations_directory = os.path.join('Subjects', 'fixations')  # CSV files
 input_blinks_directory = os.path.join('Subjects', 'blinks')  # CSV files
 input_pupil_directory = os.path.join('Subjects', 'pupil')  # CSV files
-background_images = [None, 'Question2.jpg', 'Question3.jpg', None]
-WIDTHS = [None, 2046, 1810, None]  # The width of image for each question (here 2046 width for Question 2)
-HEIGHTS = [None, 1155, 1014, None]  # The height of image for each question (here 1014 width for Question 3)
+background_images = ['Question1.jpg', 'Question2.jpg', 'Question3.jpg', None]
+WIDTHS = [1808, 2046, 1810, None]  # The width of image for each question (here 2046 width for Question 2)
+HEIGHTS = [1013, 1155, 1014, None]  # The height of image for each question (here 1014 width for Question 3)
 subjects_dict = {
     # 'None' value means we skip the analysis of that question, and tuple (start time, end time) means we partake
     # these specific times (in seconds) to include in question
@@ -22,10 +22,10 @@ subjects_dict = {
     '002':  [None, None, None, None],
     '003':  [None, None, None, None],
     '004':  [None, None, None, None],
-    '005':  [None, (418, 435), None, None],
+    '005':  [None, None, None, None],
     '006':  [None, None, None, None],
     '007':  [None, None, None, None],
-    '008':  [None, None, None, None],
+    '008':  [(428, 476), None, None, None],
     '009':  [None, None, None, None],
     '1000': [None, None, None, None],
 }

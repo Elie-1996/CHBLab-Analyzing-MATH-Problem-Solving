@@ -8,7 +8,7 @@ import cv2
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
 
-QUESTION_IDX = 2
+QUESTION_IDX = 0
 HM_INTERVAL = 1
 filename = background_images[QUESTION_IDX]
 CRED = '\33[32m'
@@ -52,7 +52,7 @@ def produce_interval_heatmap():
                 img_list.append(heatmapper.heatmap_on_img(current_points, img))
             idx += 1
 
-        img_list[0].save('Question_3_heatmap_1.png')
+        img_list[0].save('Question_1_heatmap_4.png')
         # Uncomment for video
         # out = cv2.VideoWriter(f'Interval-HeatMap-Question-{QUESTION_IDX}-Subject-'+subject.split('_')[0]+'.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 1, size)
         #

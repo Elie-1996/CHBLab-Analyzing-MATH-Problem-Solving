@@ -10,8 +10,11 @@ from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixat
 import cv2
 
 figure_counter = 0  # keep 0 please
-HARD_CODED = True # if False you can choose directly from image
-HARD_CODED_CLUSTERS = [None,
+HARD_CODED = True  # if False you can choose directly from image
+HARD_CODED_CLUSTERS = [[[[35, 997], [30, 805], [326, 814], [326, 998]],
+                        [[24, 775], [30, 469], [466, 467], [456, 769]],
+                       [[27, 411], [26, 12], [291, 4], [293, 413]],
+                        [[302, 410], [305, 5], [539, 7], [536, 405]]],
                        [[[473, 1088], [474, 942], [623, 942], [618, 1079]],
                         [[642, 910], [651, 712], [922, 676], [965, 857]],
                         [[750, 456], [733, 192], [916, 179], [918, 445]],
@@ -28,7 +31,7 @@ NEAREST_NEIGHBOR_K = 9
 CLUSTER_RADIUS = [-1, -1, -1,
                   -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
-NUM_OF_AOI = [2, 5, 3, 3]
+NUM_OF_AOI = [4, 5, 3, 3]
 
 
 class Rect:

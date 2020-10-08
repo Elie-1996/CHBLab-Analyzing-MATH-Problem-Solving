@@ -20,14 +20,14 @@ subjects_dict = {
     # '009': [None, None, None, None]
     # ##########################################################33
     '002':  [None, None, None, None],
-    '003':  [None, (368, 480), (493, 613), None],
-    '004':  [None, (251, 380), (394, 560), None],
-    '005':  [None, (385, 523), (536, 649), None],
+    '003':  [None, None, None, None],
+    '004':  [None, None, None, None],
+    '005':  [None, (418, 435), None, None],
     '006':  [None, None, None, None],
-    '007':  [None, (361, 450), (468, 620), None],
-    '008':  [None, (560, 701), (720, 930), None],
-    '009':  [None, (460, 550), (584, 714), None],
-    '1000': [None, (203, 303), (316, 414), None]
+    '007':  [None, None, None, None],
+    '008':  [None, None, None, None],
+    '009':  [None, None, None, None],
+    '1000': [None, None, None, None],
 }
 
 

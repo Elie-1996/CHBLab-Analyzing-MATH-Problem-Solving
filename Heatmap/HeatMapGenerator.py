@@ -8,7 +8,7 @@ import cv2
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory
 
 
-QUESTION_IDX = 1
+QUESTION_IDX = 2
 HM_INTERVAL = 1
 filename = background_images[QUESTION_IDX]
 CRED = '\33[32m'
@@ -31,7 +31,7 @@ def produce_interval_heatmap():
         if current_subject_time is None:
             continue
         df = pd.read_csv(input_points)
-        interval = HM_INTERVAL    # Number of seconds
+        interval = current_subject_time[1] - current_subject_time[0]    # Number of seconds
         num_rows = len(df)
         normalize_time = df['start_timestamp'].iloc[0]
         df['start_timestamp'] -= normalize_time
@@ -52,14 +52,16 @@ def produce_interval_heatmap():
                 img_list.append(heatmapper.heatmap_on_img(current_points, img))
             idx += 1
 
-        out = cv2.VideoWriter(f'Interval-HeatMap-Question-{QUESTION_IDX}-Subject-'+subject.split('_')[0]+'.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 1, size)
-
-        for i in range(len(img_list)):
-            img_list[i].save('heatmap.png')
-            for j in range(5):
-                img = cv2.imread('heatmap.png')
-            out.write(img)
-        out.release()
+        img_list[0].save('Question_3_heatmap_1.png')
+        # Uncomment for video
+        # out = cv2.VideoWriter(f'Interval-HeatMap-Question-{QUESTION_IDX}-Subject-'+subject.split('_')[0]+'.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 1, size)
+        #
+        # for i in range(len(img_list)):
+        #     img_list[i].save('heatmap.png')
+        #     for j in range(5):
+        #         img = cv2.imread('heatmap.png')
+        #     out.write(img)
+        # out.release()
 
 
 if __name__ == '__main__':

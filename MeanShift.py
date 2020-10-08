@@ -10,16 +10,25 @@ from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixat
 import cv2
 
 figure_counter = 0  # keep 0 please
-
+HARD_CODED = True # if False you can choose directly from image
+HARD_CODED_CLUSTERS = [None,
+                       [[[473, 1088], [474, 942], [623, 942], [618, 1079]],
+                        [[642, 910], [651, 712], [922, 676], [965, 857]],
+                        [[750, 456], [733, 192], [916, 179], [918, 445]],
+                        [[679, 455], [666, 225], [398, 218], [412, 448]],
+                        [[125, 304], [121, 108], [314, 93], [330, 262]]],
+                       [[[47, 929], [48, 509], [258, 509], [256, 930]],
+                                    [[253, 932], [256, 508], [466, 512], [467, 931]],
+                       [[586, 935], [586, 510], [995, 510], [995, 932]]], None]
 DRAW_PUPIL_MEAN_HISTOGRAM = False
 CREATE_CLUSTERS = False  # when true - clusters will be estimated from the data. when False, clusters will be loaded.
 USE_KNN = False  # when true - points will get labels using K Nearest neighbors
-SAVE_DATA = True  # When true - saves all (x, y)
+SAVE_DATA = False  # When true - saves all (x, y)
 NEAREST_NEIGHBOR_K = 9
 CLUSTER_RADIUS = [-1, -1, -1,
                   -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
-NUM_OF_AOI = [2, 3, 4, 3]
+NUM_OF_AOI = [2, 5, 3, 3]
 
 
 class Rect:
@@ -327,19 +336,25 @@ def run_analysis():
             CLUSTERS = []
             labels = []
             n_clusters_ = NUM_OF_AOI[question_idx] + 1
-
-            for i in range(NUM_OF_AOI[question_idx]):
-                AOI = []
-                cv2.imshow('image', img)
-                cv2.setMouseCallback('image', click_event)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-                CLUSTERS.append(AOI)
-
-            #   Convert AOI to Polygon
             polygons = []
-            for i in range(NUM_OF_AOI[question_idx]):
-                polygons.append(Polygon(CLUSTERS[i]))
+
+            if HARD_CODED:
+                #   Convert AOI to Polygon
+                for i in range(NUM_OF_AOI[question_idx]):
+                    polygons.append(Polygon(HARD_CODED_CLUSTERS[question_idx][i]))
+
+            else:
+                for i in range(NUM_OF_AOI[question_idx]):
+                    AOI = []
+                    cv2.imshow('image', img)
+                    cv2.setMouseCallback('image', click_event)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+                    CLUSTERS.append(AOI)
+
+                #   Convert AOI to Polygon
+                for i in range(NUM_OF_AOI[question_idx]):
+                    polygons.append(Polygon(CLUSTERS[i]))
 
             #   Matching labels to each point
             for coordinate in XY_ONLY:

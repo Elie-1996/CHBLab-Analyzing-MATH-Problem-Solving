@@ -7,14 +7,20 @@ from PIL import Image
 from PIL import ImageOps
 import numpy as np
 from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixations_directory, input_pupil_directory
+import cv2
 
 figure_counter = 0  # keep 0 please
 
 DRAW_PUPIL_MEAN_HISTOGRAM = False
 CREATE_CLUSTERS = False  # when true - clusters will be estimated from the data. when False, clusters will be loaded.
+USE_KNN = False  # when true - points will get labels using K Nearest neighbors
 SAVE_DATA = True  # When true - saves all (x, y)
 NEAREST_NEIGHBOR_K = 9
-CLUSTER_RADIUS = [-1, -1, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
+CLUSTER_RADIUS = [-1, -1, -1,
+                  -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
+
+NUM_OF_AOI = [2, 3, 4, 3]
+
 
 class Rect:
     def __init__(self, upper_left_x, upper_left_y, bottom_right_x, bottom_right_y):
@@ -91,7 +97,8 @@ def get_question_fixation_data(question_idx):
                 duration = int(df['duration'].iloc[i] / 10)
                 durations[(x, y)] = df['duration'].iloc[i]
                 for j in range(duration):
-                    data.append([df['start_timestamp'].iloc[i], [df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT]])
+                    data.append([df['start_timestamp'].iloc[i],
+                                 [df['norm_pos_x'].iloc[i] * WIDTH, (df['norm_pos_y'].iloc[i]) * HEIGHT]])
                     current_question_time_stamps.append(df['start_timestamp'])
         xy_points_amount_per_subject.append(len(data) - sum(xy_points_amount_per_subject))
         subjects.append(file.split('_')[0])
@@ -157,7 +164,8 @@ def build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_su
     return switch_mat_list
 
 
-def build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects):
+def build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx,
+                                                 n_clusters_, subjects):
     global figure_counter
     from matrixHeatMap import heatmapMatrix, annotate_heatmapMatrix
     total_jumps_within_each_area = [0 for _ in range(switch_mat_list[0].shape[0])]
@@ -177,7 +185,6 @@ def build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amou
 
 
 def reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_):
-
     epsilon = 0.5
     diameters_in_all_clusters = [[] for _ in range(n_clusters_)]
     for current_subject_diameter_data in diameter_data:
@@ -199,14 +206,14 @@ def reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_):
 def getAngle(three_angles):
     a, b, c = three_angles[0], three_angles[1], three_angles[2]
     import math
-    ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+    ang = math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
     return ang + 360 if ang < 0 else ang
 
 
 def get_fixation_totalamount_variance_angles(XY_ONLY):
     angles = []
     for i in range(len(XY_ONLY) - 3):
-        angles.append(getAngle(XY_ONLY[i:i+3]))
+        angles.append(getAngle(XY_ONLY[i:i + 3]))
     angles = np.array(angles)
     angles_hist = []
     angle_degrees_strings = []
@@ -246,9 +253,22 @@ def get_duration_per_cluster(XY_ONLY, durations, labels, n_clusters_):
         total_stay += duration
     durations_per_visit_per_cluster[last_cluster].append(total_stay)
 
-
-    stay_duration_mean_per_cluster = [np.array(duration_list_in_cluster).mean() for duration_list_in_cluster in durations_per_visit_per_cluster]
+    stay_duration_mean_per_cluster = [np.array(duration_list_in_cluster).mean() for duration_list_in_cluster in
+                                      durations_per_visit_per_cluster]
     return stay_duration_mean_per_cluster
+
+
+AOI = []
+HEIGHT = None
+
+
+def click_event(event, x, y, flags, params):
+    global AOI
+    # checking for left mouse clicks
+    if event == cv2.EVENT_LBUTTONDOWN:
+        # displaying the coordinates
+        print(x, ' ', HEIGHT - y, HEIGHT)
+        AOI.append([x, HEIGHT - y])
 
 
 def run_analysis():
@@ -257,13 +277,14 @@ def run_analysis():
         figure_counter = 0  # keep 0 please
 
         # extract question data
-        data, xy_points_amount_per_subject, subjects, diameter_data, durations, total_duration = get_question_data(question_idx)
+        data, xy_points_amount_per_subject, subjects, diameter_data, durations, total_duration = get_question_data(
+            question_idx)
         if not data:  # if empty
             print(CRED + "Skipping - No data provided for current question" + CEND)
             continue
-        XY_TIME = np.array(data)
+        XY_TIME = np.array(data, dtype=object)
         print(XY_TIME.shape)
-        XY_ONLY = np.array([[x,y] for t,(x,y) in XY_TIME])
+        XY_ONLY = np.array([[x, y] for t, (x, y) in XY_TIME])
         print(XY_ONLY.shape)
 
         # choose bandwidth
@@ -284,25 +305,66 @@ def run_analysis():
                 df.to_csv('clusters.csv')
                 df = pd.DataFrame(cluster_centers, columns=['cluster_centers_x', 'cluster_centers_y'])
                 df.to_csv('cluster_centers.csv')
-        else:
+
+        elif USE_KNN:
             KNN = KNearestNeighbors(n_neighbors=NEAREST_NEIGHBOR_K)
             df = pd.read_csv('clusters.csv')
             df_centers = pd.read_csv('cluster_centers.csv')
             loaded_data = [[df['x'].iloc[i], df['y'].iloc[i]] for i in range(len(df['x']))]
             loaded_labels = [df['labels'].iloc[i] for i in range(len(df['labels']))]
-            cluster_centers = [[df_centers['cluster_centers_x'].iloc[i], df_centers['cluster_centers_y'].iloc[i]] for i in range(len(df_centers['cluster_centers_x']))]
+            cluster_centers = [[df_centers['cluster_centers_x'].iloc[i], df_centers['cluster_centers_y'].iloc[i]] for i
+                               in range(len(df_centers['cluster_centers_x']))]
             KNN.fit(loaded_data, loaded_labels)
             labels = KNN.predict(XY_ONLY)
             labels_unique = np.unique(loaded_labels)
             n_clusters_ = len(labels_unique)
+
+        else:
+            global AOI, HEIGHT
+            from shapely.geometry import Polygon, Point
+            img = cv2.imread(os.path.join('Heatmap', background_images[question_idx]), 1)
+            HEIGHT = img.shape[0]
+            CLUSTERS = []
+            labels = []
+            n_clusters_ = NUM_OF_AOI[question_idx] + 1
+
+            for i in range(NUM_OF_AOI[question_idx]):
+                AOI = []
+                cv2.imshow('image', img)
+                cv2.setMouseCallback('image', click_event)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                CLUSTERS.append(AOI)
+
+            #   Convert AOI to Polygon
+            polygons = []
+            for i in range(NUM_OF_AOI[question_idx]):
+                polygons.append(Polygon(CLUSTERS[i]))
+
+            #   Matching labels to each point
+            for coordinate in XY_ONLY:
+                point = Point(coordinate[0], coordinate[1])
+                for i in range(NUM_OF_AOI[question_idx]):
+                    if polygons[i].contains(point):
+                        labels.append(i)
+                        break
+                    if i == NUM_OF_AOI[question_idx] - 1:
+                        labels.append(NUM_OF_AOI[question_idx])
+
         print(CGREEN + "Finish clustering" + CEND)
 
         print(xy_points_amount_per_subject)
         if DRAW_PUPIL_MEAN_HISTOGRAM:
             diameters_in_all_clusters = reorganize_pupil_data_per_area(diameter_data, XY_TIME, labels, n_clusters_)
-        switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, XY_ONLY, labels, n_clusters_)
-        switch_mat_list, total_jumps_within_each_area = build_cluster_jump_array_within_same_cluster(switch_mat_list, xy_points_amount_per_subject, question_idx, n_clusters_, subjects)
-        total_number_of_fixations, fixation_variance, angles_mean, angles_hist, angle_degrees_strings = get_fixation_totalamount_variance_angles(XY_ONLY)
+        switch_mat_list = build_cluster_jump_matrix_between_different_clusters(xy_points_amount_per_subject, XY_ONLY,
+                                                                               labels, n_clusters_)
+        switch_mat_list, total_jumps_within_each_area = build_cluster_jump_array_within_same_cluster(switch_mat_list,
+                                                                                                     xy_points_amount_per_subject,
+                                                                                                     question_idx,
+                                                                                                     n_clusters_,
+                                                                                                     subjects)
+        total_number_of_fixations, fixation_variance, angles_mean, angles_hist, angle_degrees_strings = get_fixation_totalamount_variance_angles(
+            XY_ONLY)
         mean_pupil_size, variance_pupil_size = get_pupil_mean_variance(diameter_data)
         stay_duration_mean_per_cluster = get_duration_per_cluster(XY_ONLY, durations, labels, n_clusters_)
 
@@ -330,11 +392,13 @@ def run_analysis():
             # time_per_cluster.append(time_for_each_visit_in_current_cluster)
             hist.append(len(my_members))
             hist_color.append(col)
-            cluster_center = cluster_centers[k]
             plt.scatter(XY_ONLY[my_members, 0], XY_ONLY[my_members, 1], c=col, marker='.')
             patch = mpatches.Patch(color=col, label=k)
             legend.append(patch)
-            plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=14)
+            if CREATE_CLUSTERS or USE_KNN:
+                cluster_center = cluster_centers[k]
+                plt.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k',
+                         markersize=14)
 
         plt.legend(handles=legend)
         plt.title(f'Question {question_idx + 1} - Estimated number of clusters: {n_clusters_}')
@@ -410,7 +474,8 @@ def run_analysis():
         print("Mean Pupil: " + str(mean_pupil_size))
         print("Variance Pupil: " + str(variance_pupil_size))
         print("Angles Mean: " + str(angles_mean))
-        print([int(total_duration), int(total_number_of_fixations), int(fixation_variance), int(mean_pupil_size), int(variance_pupil_size), int(angles_mean)])
+        print([int(total_duration), int(total_number_of_fixations), int(fixation_variance), int(mean_pupil_size),
+               int(variance_pupil_size), int(angles_mean)])
         print(CRED + "Please Close all open windows to continue to next question." + CEND)
         plt.show()
 

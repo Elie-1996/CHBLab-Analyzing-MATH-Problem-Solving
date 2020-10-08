@@ -137,3 +137,6 @@ dmypy.json
 docs/_build
 000/world.mp4
 *.mp4
+*.gif
+*.png
+*.rar

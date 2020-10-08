@@ -18,6 +18,7 @@ subjects_dict = {
     # Note: If you would like to exclude a subject entirely -
     # simply fill them with 'None' values, example to exclude subject 9:
     # '009': [None, None, None, None]
+    # ##########################################################33
     '002':  [None, None, None, None],
     '003':  [None, (368, 480), (493, 613), None],
     '004':  [None, (251, 380), (394, 560), None],

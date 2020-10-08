@@ -11,7 +11,10 @@ from Utils import background_images, WIDTHS, HEIGHTS, subjects_dict, input_fixat
 figure_counter = 0  # keep 0 please
 
 DRAW_PUPIL_MEAN_HISTOGRAM = False
-CLUSTER_RADIUS = [-1, 150, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
+CREATE_CLUSTERS = False  # when true - clusters will be estimated from the data. when False, clusters will be loaded.
+SAVE_DATA = True  # When true - saves all (x, y)
+NEAREST_NEIGHBOR_K = 9
+CLUSTER_RADIUS = [-1, -1, -1, -1]  # any non-negative number means this will use the fixed value given. If a negative value, then an automatic radius (bandwidth) estimation is performed
 
 class Rect:
     def __init__(self, upper_left_x, upper_left_y, bottom_right_x, bottom_right_y):
@@ -267,12 +270,31 @@ def run_analysis():
         bandwidth = choose_bandwidth(XY_ONLY, question_idx)
 
         # create clusters and extract cluster data
-        clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(XY_ONLY)
-        cluster_centers = clustering.cluster_centers_
-        labels = clustering.labels_
-        # KNearestNeighbors(n_neighbors=9).fit(XY_ONLY, labels)
-        labels_unique = np.unique(labels)
-        n_clusters_ = len(labels_unique)
+        if CREATE_CLUSTERS:
+            clustering = MeanShift(bandwidth=bandwidth, max_iter=300, n_jobs=2, bin_seeding=True).fit(XY_ONLY)
+            cluster_centers = clustering.cluster_centers_
+            labels = clustering.labels_
+            labels_unique = np.unique(labels)
+            n_clusters_ = len(labels_unique)
+            if SAVE_DATA:
+                all_x = [x for x, y in XY_ONLY]
+                all_y = [y for x, y in XY_ONLY]
+                all_labels = labels
+                df = pd.DataFrame(list(zip(all_x, all_y, all_labels)), columns=['x', 'y', 'labels'])
+                df.to_csv('clusters.csv')
+                df = pd.DataFrame(cluster_centers, columns=['cluster_centers_x', 'cluster_centers_y'])
+                df.to_csv('cluster_centers.csv')
+        else:
+            KNN = KNearestNeighbors(n_neighbors=NEAREST_NEIGHBOR_K)
+            df = pd.read_csv('clusters.csv')
+            df_centers = pd.read_csv('cluster_centers.csv')
+            loaded_data = [[df['x'].iloc[i], df['y'].iloc[i]] for i in range(len(df['x']))]
+            loaded_labels = [df['labels'].iloc[i] for i in range(len(df['labels']))]
+            cluster_centers = [[df_centers['cluster_centers_x'].iloc[i], df_centers['cluster_centers_y'].iloc[i]] for i in range(len(df_centers['cluster_centers_x']))]
+            KNN.fit(loaded_data, loaded_labels)
+            labels = KNN.predict(XY_ONLY)
+            labels_unique = np.unique(loaded_labels)
+            n_clusters_ = len(labels_unique)
         print(CGREEN + "Finish clustering" + CEND)
 
         print(xy_points_amount_per_subject)
@@ -388,7 +410,7 @@ def run_analysis():
         print("Mean Pupil: " + str(mean_pupil_size))
         print("Variance Pupil: " + str(variance_pupil_size))
         print("Angles Mean: " + str(angles_mean))
-
+        print([int(total_duration), int(total_number_of_fixations), int(fixation_variance), int(mean_pupil_size), int(variance_pupil_size), int(angles_mean)])
         print(CRED + "Please Close all open windows to continue to next question." + CEND)
         plt.show()
 

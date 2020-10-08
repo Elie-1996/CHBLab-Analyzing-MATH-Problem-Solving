@@ -11,8 +11,8 @@ df_interpolation_possibilities = ['cubic', 'linear', 'time', 'index', 'values', 
 
 ############################################################################
 BASELINE = 0, 10
-SUBJECT = "003"  # which subject to preprocess
-QUESTION_IDX = 2  # which question to take (this is index and not value! which means IDX 0 is question 1)
+SUBJECT = "008"  # which subject to preprocess
+QUESTION_IDX = 1  # which question to take (this is index and not value! which means IDX 0 is question 1)
 NEIGHBOR_WINDOW_SIZE = 3  # This is a 3x3 window
 HAMPEL_SIGMA = 3
 HAMPEL_WINDOW_SIZE = 12
